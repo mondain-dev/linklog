@@ -14,8 +14,7 @@ let extractTitle = (str) => {
     return str.replace(/(<([^>]+)>)/ig, '\n').split('\n').filter(Boolean)[0];
 }
 
-
-let  extractLinks = async (entry, excludes, css_selector = 'a') => {
+let extractLinks = async (entry, excludes, css_selector = 'a') => {
     const $ = cheerio.load(entry['content:encoded']);
     let links = [];
     $(css_selector).each( async function () {
@@ -30,10 +29,11 @@ let  extractLinks = async (entry, excludes, css_selector = 'a') => {
                 date: entry.pubDate,
                 author: entry.author,
             };
-            links.push(link_entry);
+            if( ! links.map((e)=> {return e.url}).includes(link_entry.url) ){
+                links.push(link_entry);
+            }
         }       
     });
-    
     return links;
 }
 
@@ -44,17 +44,22 @@ let loadFeeds = async (feed_config) => {
         await rssParser.parseURL(f.url).then( async (feed_content) => {
             for(let entry of feed_content.items)
             {
+                let include_entry = true;
                 if('entry' in f){
                     if('includes' in f.entry){
-                        if(entry[f.entry.includes.target].toLowerCase().includes(f.entry.includes.term.toLowerCase()))
-                        {
-                            let extracted_links = await extractLinks(entry, f.link.excludes, f.link.selector);
-                            entries.push(...extracted_links);
+                        if(!entry[f.entry.includes.target].toLowerCase().includes(f.entry.includes.term.toLowerCase())){
+                            include_entry = false;
                         }
                     }
                 }
-                else
-                {
+                if('recent' in f){
+                    if ('pubDate' in entry && f.recent > 0){
+                        if( Date.now() - Date.parse(entry.pubDate) > 3600 * 24 * 1000 * f.recent ){
+                            include_entry = false;
+                        } 
+                    }                    
+                }
+                if(include_entry){
                     let extracted_links = await extractLinks(entry, f.link.excludes, f.link.selector);
                     entries.push(...extracted_links);
                 }
