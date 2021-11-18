@@ -72,7 +72,7 @@ loadFeeds(feed_config).then((items) => {
         output_feed.item(item);
     }
 }).then(() => {
-    fs.writeFile('index.xml', output_feed.xml(), function (err) {
+    fs.writeFile('build/index.xml', output_feed.xml(), function (err) {
         if (err) return console.log(err);});
 });
 
