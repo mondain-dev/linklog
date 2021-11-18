@@ -4,13 +4,16 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "build": "node app.js"
+    "build": "node app.js",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@iarna/toml": "^2.2.5",
     "cheerio": "^1.0.0-rc.10",
+    "gh-pages": "^3.2.3",
     "rss": "^1.2.2",
     "rss-parser": "^3.12.0",
     "whatwg-url": "^11.0.0"
