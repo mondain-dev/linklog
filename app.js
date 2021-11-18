@@ -64,7 +64,7 @@ let loadFeeds = async (feed_config) => {
     return entries;
 }
 
-let output_feed = new RSS({title:"test", feed_url:"https://github.com/feed", site_url:"https://github.com"});
+let output_feed = new RSS({title:"Linklog", feed_url:"https://mondain-dev.github.io/linklog/index.xml", site_url:"https://github.com/mondain-dev/linklog/"});
 
 
 loadFeeds(feed_config).then((items) => {
