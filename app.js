@@ -9,31 +9,50 @@ var RSS = require('rss');
 
 var feed_config = toml.parse(fs.readFileSync('feeds.toml', 'utf8')).feeds;
 
-
-let extractTitle = (str) => {
-    return str.replace(/(<([^>]+)>)/ig, '\n').split('\n').filter(Boolean)[0];
+let extractTitle = (strHTML) => {
+    texts = strHTML.replace(/(<([^>]+)>)/ig, '\n').split('\n').filter(Boolean);
+    if(texts){
+        return texts[0].trim();
+    }
+    else{
+        return '';
+    }
 }
 
 let extractLinks = async (entry, excludes, css_selector = 'a') => {
-    const $ = cheerio.load(entry['content:encoded']);
+    let entry_content = '';
+    if('content:encoded' in entry){
+        entry_content = entry['content:encoded'];
+    }
+    else if('content' in entry){
+        entry_content = entry['content'];
+    }else if('description' in entry){
+        entry_content = entry['description'];
+    }
     let links = [];
-    $(css_selector).each( async function () {
-        if (excludes.every((t)=>{return !$(this).attr('href').includes(t)})){
-            let link_url = $(this).attr('href');
-            let link_title = extractTitle($(this).html());
-            let link_description = "<p>URL: <a href=\"" + $(this).attr('href') +"\">" + $(this).attr('href')  + "</a></p><p>source: <a href=\"" + entry.link +"\">" + entry.title + "</a></p>";
-            let link_entry = {
-                url: link_url, 
-                title: link_title,
-                description: link_description,
-                date: entry.pubDate,
-                author: entry.author,
-            };
-            if( ! links.map((e)=> {return e.url}).includes(link_entry.url) ){
-                links.push(link_entry);
-            }
-        }       
-    });
+    if(entry_content){
+        const $ = cheerio.load(entry_content);
+        $(css_selector).each( async function () {
+            if (excludes.every((t)=>{return !$(this).attr('href').includes(t) && !$(this).html().includes(t) })){
+                let link_url = $(this).attr('href');
+                let link_title = extractTitle($(this).html());
+                if(!link_title){
+                    link_title = link_url;
+                }
+                let link_description = "<p>URL: <a href=\"" + $(this).attr('href') +"\">" + $(this).attr('href')  + "</a></p><p>source: <a href=\"" + entry.link +"\">" + entry.title + "</a></p>";
+                let link_entry = {
+                    url: link_url, 
+                    title: link_title,
+                    description: link_description,
+                    date: entry.pubDate,
+                    author: entry.author,
+                };
+                if( ! links.map((e)=> {return e.url}).includes(link_entry.url) ){
+                    links.push(link_entry);
+                }
+            }       
+        });
+    }
     return links;
 }
 

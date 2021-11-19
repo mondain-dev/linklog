@@ -25,7 +25,7 @@ url = "https://tocqueville21.com/feed/"
 entry.includes.target = "title"
 entry.includes.term = "revue de presse"
 link.selector = "a"
-link.excludes = ["tocqueville21.com", "twitter.com"]
+link.excludes = ["tocqueville21.com", "twitter.com", "creativecommons.org/licenses", "Wikimedia Commons", "Creative Commons"]
 recent = 15
 
 [[feeds]]
