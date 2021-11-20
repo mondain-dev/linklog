@@ -1,32 +1,31 @@
 [[feeds]]
 url = "https://quillette.com/rss/"
 entry.includes.target = "title"
-entry.includes.term = "roundup"
+entry.includes.keyword = "roundup"
 link.selector = "a"
 link.excludes = ["quillette.com", "twitter.com"]
 
 [[feeds]]
 url = "http://feeds.feedburner.com/marginalrevolution"
 entry.includes.target = "title"
-entry.includes.term = "assorted link"
+entry.includes.keyword = "assorted link"
 link.selector = "a"
 link.excludes = ["marginalrevolution.com"]
-
 
 [[feeds]]
 url = "https://braddelong.substack.com/feed"
 entry.includes.target = "title"
-entry.includes.term = "briefly noted"
+entry.includes.keyword = "briefly noted"
 link.selector = "a"
 link.excludes = ["braddelong.substack.com","twitter.com"]
 
 [[feeds]]
 url = "https://tocqueville21.com/feed/"
 entry.includes.target = "title"
-entry.includes.term = "revue de presse"
+entry.includes.keyword = "revue de presse"
 link.selector = "a"
 link.excludes = ["tocqueville21.com", "twitter.com", "creativecommons.org/licenses", "Wikimedia Commons", "Creative Commons"]
-recent = 15
+recent = 60
 
 [[feeds]]
 url = "https://bestoftwitter.substack.com/feed"
