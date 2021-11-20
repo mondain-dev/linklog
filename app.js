@@ -7,7 +7,16 @@ var RSSParser = require('rss-parser');
 let rssParser = new RSSParser();
 var RSS = require('rss');
 
-var feed_config = toml.parse(fs.readFileSync('feeds.toml', 'utf8')).feeds;
+var feedConfig = toml.parse(fs.readFileSync('feeds.toml', 'utf8')).feeds;
+
+function validateURL(string) {
+    try {
+      let url = new URL(string);
+    } catch (_) {
+      return false;  
+    }
+    return true;
+}
 
 let extractTitle = (strHTML) => {
     texts = strHTML.replace(/(<([^>]+)>)/ig, '\n').split('\n').filter(Boolean);
@@ -19,36 +28,39 @@ let extractTitle = (strHTML) => {
     }
 }
 
-let extractLinks = async (entry, excludes, css_selector = 'a') => {
-    let entry_content = '';
+let extractLinks = async (entry, excludes, cssSelector = 'a') => {
+    let entryContent = '';
     if('content:encoded' in entry){
-        entry_content = entry['content:encoded'];
+        entryContent = entry['content:encoded'];
     }
     else if('content' in entry){
-        entry_content = entry['content'];
+        entryContent = entry['content'];
     }else if('description' in entry){
-        entry_content = entry['description'];
+        entryContent = entry['description'];
     }
     let links = [];
-    if(entry_content){
-        const $ = cheerio.load(entry_content);
-        $(css_selector).each( async function () {
-            if (excludes.every((t)=>{return !$(this).attr('href').includes(t) && !$(this).html().includes(t) })){
-                let link_url = $(this).attr('href');
-                let link_title = extractTitle($(this).html());
-                if(!link_title){
-                    link_title = link_url;
-                }
-                let link_description = "<p>URL: <a href=\"" + $(this).attr('href') +"\">" + $(this).attr('href')  + "</a></p><p>source: <a href=\"" + entry.link +"\">" + entry.title + "</a></p>";
-                let link_entry = {
-                    url: link_url, 
-                    title: link_title,
-                    description: link_description,
-                    date: entry.pubDate,
-                    author: entry.author,
-                };
-                if( ! links.map((e)=> {return e.url}).includes(link_entry.url) ){
-                    links.push(link_entry);
+    if(entryContent){
+        const $ = cheerio.load(entryContent);
+        $(cssSelector).each( async function () {
+            if (excludes.every((t)=>{return !$(this).attr('href').includes(t) && !$(this).text().includes(t) })){
+                let linkURL = $(this).attr('href');
+                if (validateURL(linkURL))
+                {
+                    let linkTitle = extractTitle($(this).html());
+                    if(!linkTitle){
+                        linkTitle = linkURL;
+                    }
+                    let linkDescription = "<p>URL: <a href=\"" + linkURL +"\">" + linkURL  + "</a></p><p>source: <a href=\"" + entry.link +"\">" + entry.title + "</a></p>";
+                    let linkEntry = {
+                        url: linkURL, 
+                        title: linkTitle,
+                        description: linkDescription,
+                        date: entry.pubDate,
+                        author: entry.author,
+                    };
+                    if( ! links.map((e)=> {return e.url}).includes(linkEntry.url) ){
+                        links.push(linkEntry);
+                    }
                 }
             }       
         });
@@ -56,31 +68,31 @@ let extractLinks = async (entry, excludes, css_selector = 'a') => {
     return links;
 }
 
-let loadFeeds = async (feed_config) => {
+let loadFeeds = async (feedConfig) => {
     let entries = [];
-    for(const f of feed_config)
+    for(const f of feedConfig)
     {
-        await rssParser.parseURL(f.url).then( async (feed_content) => {
-            for(let entry of feed_content.items)
+        await rssParser.parseURL(f.url).then( async (feedContent) => {
+            for(let entry of feedContent.items)
             {
-                let include_entry = true;
+                let includeEntry = true;
                 if('entry' in f){
                     if('includes' in f.entry){
-                        if(!entry[f.entry.includes.target].toLowerCase().includes(f.entry.includes.term.toLowerCase())){
-                            include_entry = false;
+                        if(!entry[f.entry.includes.target].toLowerCase().includes(f.entry.includes.keyword.toLowerCase())){
+                            includeEntry = false;
                         }
                     }
                 }
                 if('recent' in f){
                     if ('pubDate' in entry && f.recent > 0){
                         if( Date.now() - Date.parse(entry.pubDate) > 3600 * 24 * 1000 * f.recent ){
-                            include_entry = false;
+                            includeEntry = false;
                         } 
                     }                    
                 }
-                if(include_entry){
-                    let extracted_links = await extractLinks(entry, f.link.excludes, f.link.selector);
-                    entries.push(...extracted_links);
+                if(includeEntry){
+                    let extractedLinks = await extractLinks(entry, f.link.excludes, f.link.selector);
+                    entries.push(...extractedLinks);
                 }
             }
         });
@@ -88,15 +100,13 @@ let loadFeeds = async (feed_config) => {
     return entries;
 }
 
-let output_feed = new RSS({title:"Linklog", feed_url:"https://mondain-dev.github.io/linklog/index.xml", site_url:"https://github.com/mondain-dev/linklog/"});
+let outputFeed = new RSS({title:"Linklog", feed_url:"https://mondain-dev.github.io/linklog/index.xml", site_url:"https://github.com/mondain-dev/linklog"});
 
-
-loadFeeds(feed_config).then((items) => {
+loadFeeds(feedConfig).then((items) => {
     for(let item of items){
-        output_feed.item(item);
+        outputFeed.item(item);
     }
 }).then(() => {
-    fs.writeFile('build/index.xml', output_feed.xml(), function (err) {
+    fs.writeFile('build/index.xml', outputFeed.xml(), function (err) {
         if (err) return console.log(err);});
 });
-
