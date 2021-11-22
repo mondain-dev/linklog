@@ -19,7 +19,7 @@ function validateURL(string) {
 }
 
 let extractTitle = (strHTML) => {
-    texts = strHTML.replace(/(<([^>]+)>)/ig, '\n').split('\n').filter(Boolean);
+    texts = strHTML.trim().replace(/(<([^>]+)>)/ig, '\n').split('\n').map(e => e.trim()).filter(Boolean);
     if(texts){
         return texts[0].trim();
     }
