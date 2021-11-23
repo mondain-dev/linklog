@@ -173,7 +173,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                 {
                     let linkTitle = extractTitle($(el).html());
                     if(validateURL(linkTitle) || !linkTitle){
-                        linkTitle = fetchTitle(linkURL);
+                        linkTitle = await fetchTitle(linkURL);
                     }
                     if(!linkTitle){
                         linkTitle = linkURL;
