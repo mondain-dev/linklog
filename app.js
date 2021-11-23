@@ -1,5 +1,6 @@
 var fs = require('fs');
-var URL = require('url').URL
+var URL = require('whatwg-url').URL
+var parseURL = require("whatwg-url").parseURL;
 
 var toml = require('@iarna/toml');
 var cheerio = require("cheerio");
@@ -7,7 +8,6 @@ var RSSParser = require('rss-parser');
 let rssParser = new RSSParser();
 var RSS = require('rss');
 
-var parseURL = require("whatwg-url").parseURL;
 var getLinkPreview = require("link-preview-js").getLinkPreview;
 var unfurl = require("unfurl.js").unfurl;
 
@@ -19,19 +19,61 @@ async function getLinkContent(url){
         {
             try{
                 let linkData = await unfurl(url, {timeout:5000});
-                try {
-                    linkDescription += "<p><img src=\"" + linkData.open_graph.images[0].url + "\"></p>";
+                let imgDescription = "";
+                if(!imgDescription){
+                    try {
+                        imgDescription = "<p><img src=\"" + linkData.open_graph.images[0].url + "\"></p>";
+                    }
+                    catch(error){
+                    }
                 }
-                catch(error){
-                    // console.log(error);
+                if(!imgDescription){
+                    try {
+                        imgDescription = "<p><img src=\"" + linkData.twitter_card.images[0].url + "\" alt=\"" + linkData.twitter_card.images[0].alt +  "\"></p>";
+                    }
+                    catch(error){
+                    }
                 }
-                try{
-                    // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-                    linkDescription += '<p>' + linkData.title+ '</p>';
+                let textDescription = "";
+                if(!textDescription){
+                    try{
+                        // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
+                        if('open_graph' in linkData){
+                            if('title' in linkData.open_graph){
+                                textDescription += '<p>' + linkData.open_graph.title + '</p>';
+                            }
+                            if('description' in linkData.open_graph){
+                                textDescription += '<p>' + linkData.open_graph.description + '</p>';
+                            }
+                        }
+                    }
+                    catch (error){
+                    }
                 }
-                catch (error){
-                    console.log(error);
+                if(!textDescription){
+                    try{
+                        // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
+                        if('twitter_card' in linkData){
+                            if('title' in linkData.twitter_card){
+                                textDescription += '<p>' + linkData.twitter_card.title + '</p>';
+                            }
+                            if('description' in linkData.twitter_card){
+                                textDescription += '<p>' + linkData.twitter_card.description + '</p>';
+                            }
+                        }
+                    }
+                    catch (error){
+                    }
                 }
+                if(!textDescription){
+                    try{
+                        // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
+                        textDescription += '<p>' + linkData.title+ '</p>';
+                    }
+                    catch (error){
+                    }
+                }
+                linkDescription = imgDescription + textDescription;
             }
             catch (error){
                 console.log("unfurl(" + url + ") failed: ")
@@ -58,12 +100,26 @@ async function fetchTitle(url){
         {
             try{
                 let linkData = await unfurl(url, {timeout:5000});
-                try{
-                    // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-                    linkTitle = linkData.title;
+                if(!linkTitle){
+                    try{
+                        linkTitle = linkData.open_graph.title;
+                    }
+                    catch (error){
+                    }    
                 }
-                catch (error){
-                    console.log(error);
+                if(!linkTitle){
+                    try{
+                        linkTitle = linkData.twitter_card.title;
+                    }
+                    catch (error){
+                    }
+                }
+                if(!linkTitle){
+                    try{
+                        linkTitle = linkData.title;
+                    }
+                    catch (error){
+                    }
                 }
             }
             catch (error){
@@ -116,7 +172,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                 if (validateURL(linkURL))
                 {
                     let linkTitle = extractTitle($(el).html());
-                    if(validateURL(linkTitle)){
+                    if(validateURL(linkTitle) || !linkTitle){
                         linkTitle = fetchTitle(linkURL);
                     }
                     if(!linkTitle){
@@ -167,8 +223,8 @@ let loadFeeds = async (feedConfig) => {
                     if ('pubDate' in entry && f.recent > 0){
                         if( Date.now() - Date.parse(entry.pubDate) > 3600 * 24 * 1000 * f.recent ){
                             includeEntry = false;
-                        } 
-                    }                    
+                        }
+                    }               
                 }
                 if(includeEntry){
                     let extractedLinks = await extractLinks(entry, f.link.excludes, f.link.selector);
