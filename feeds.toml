@@ -18,6 +18,7 @@ entry.includes.target = "title"
 entry.includes.keyword = "briefly noted"
 link.selector = "a"
 link.excludes = ["braddelong.substack.com","twitter.com"]
+recent = 3
 
 [[feeds]]
 url = "https://tocqueville21.com/feed/"
