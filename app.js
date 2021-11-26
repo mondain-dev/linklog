@@ -145,7 +145,7 @@ function validateURL(string) {
 
 let extractTitle = (strHTML) => {
     const $ = cheerio.load(strHTML);
-    if($('.embedded-post-title'.length)){
+    if($('.embedded-post-title').length){
         return $('.embedded-post-title').first().text();
     }
     texts = strHTML.trim().replace(/(<([^>]+)>)/ig, '\n').split('\n').map(e => e.trim()).filter(Boolean);
