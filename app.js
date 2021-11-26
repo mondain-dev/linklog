@@ -144,6 +144,10 @@ function validateURL(string) {
 }
 
 let extractTitle = (strHTML) => {
+    const $ = cheerio.load(strHTML);
+    if($('.embedded-post-title'.length)){
+        return $('.embedded-post-title').first().text();
+    }
     texts = strHTML.trim().replace(/(<([^>]+)>)/ig, '\n').split('\n').map(e => e.trim()).filter(Boolean);
     if(texts){
         return texts[0].trim();
@@ -181,7 +185,10 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                     
                     // let linkContent = 
                     let linkContent = "<p>URL: <a href=\"" + linkURL +"\">" + linkURL  + "</a></p><p>source: <a href=\"" + entry.link +"\">" + entry.title + "</a></p>";
-                    if (/twitter.com$/.test(parseURL(linkURL).host.toLocaleLowerCase())){
+                    if($('.embedded-post-body', el).length){
+                        linkContent = '<p>' + $('.embedded-post-body', el).first().text() + '</p>' + linkContent;
+                    }
+                    else if (/twitter.com$/.test(parseURL(linkURL).host.toLocaleLowerCase())){
                         let tweetContent = await renderTweet(linkURL);
                         linkContent = tweetContent + linkContent;
                     }
