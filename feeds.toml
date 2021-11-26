@@ -17,7 +17,7 @@ url = "https://braddelong.substack.com/feed"
 entry.includes.target = "title"
 entry.includes.keyword = "briefly noted"
 link.selector = "a"
-link.excludes = ["braddelong.substack.com","twitter.com"]
+link.excludes = ["braddelong.substack.com","twitter.com", "cdn.substack.com"]
 recent = 3
 
 [[feeds]]
@@ -31,5 +31,5 @@ recent = 30
 [[feeds]]
 url = "https://bestoftwitter.substack.com/feed"
 link.selector = "a"
-link.excludes = ["bestoftwitter.substack.com"]
+link.excludes = ["bestoftwitter.substack.com", "cdn.substack.com"]
 recent = 3
