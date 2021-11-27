@@ -13,78 +13,66 @@ var unfurl = require("unfurl.js").unfurl;
 
 async function getLinkContent(url){
     let linkDescription = "";
-    try {
-        let linkPreview = await getLinkPreview(url, {timeout:5000});
-        if (linkPreview.contentType.startsWith("text/html"))
-        {
+    try{
+        let linkData = await unfurl(url, {timeout:5000});
+        let imgDescription = "";
+        if(!imgDescription){
+            try {
+                imgDescription = "<p><img src=\"" + linkData.open_graph.images[0].url + "\"></p>";
+            }
+            catch(error){
+            }
+        }
+        if(!imgDescription){
+            try {
+                imgDescription = "<p><img src=\"" + linkData.twitter_card.images[0].url + "\" alt=\"" + linkData.twitter_card.images[0].alt +  "\"></p>";
+            }
+            catch(error){
+            }
+        }
+        let textDescription = "";
+        if(!textDescription){
             try{
-                let linkData = await unfurl(url, {timeout:5000});
-                let imgDescription = "";
-                if(!imgDescription){
-                    try {
-                        imgDescription = "<p><img src=\"" + linkData.open_graph.images[0].url + "\"></p>";
+                // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
+                if('open_graph' in linkData){
+                    if('title' in linkData.open_graph){
+                        textDescription += '<p>' + linkData.open_graph.title + '</p>';
                     }
-                    catch(error){
-                    }
-                }
-                if(!imgDescription){
-                    try {
-                        imgDescription = "<p><img src=\"" + linkData.twitter_card.images[0].url + "\" alt=\"" + linkData.twitter_card.images[0].alt +  "\"></p>";
-                    }
-                    catch(error){
+                    if('description' in linkData.open_graph){
+                        textDescription += '<p>' + linkData.open_graph.description + '</p>';
                     }
                 }
-                let textDescription = "";
-                if(!textDescription){
-                    try{
-                        // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-                        if('open_graph' in linkData){
-                            if('title' in linkData.open_graph){
-                                textDescription += '<p>' + linkData.open_graph.title + '</p>';
-                            }
-                            if('description' in linkData.open_graph){
-                                textDescription += '<p>' + linkData.open_graph.description + '</p>';
-                            }
-                        }
-                    }
-                    catch (error){
-                    }
-                }
-                if(!textDescription){
-                    try{
-                        // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-                        if('twitter_card' in linkData){
-                            if('title' in linkData.twitter_card){
-                                textDescription += '<p>' + linkData.twitter_card.title + '</p>';
-                            }
-                            if('description' in linkData.twitter_card){
-                                textDescription += '<p>' + linkData.twitter_card.description + '</p>';
-                            }
-                        }
-                    }
-                    catch (error){
-                    }
-                }
-                if(!textDescription){
-                    try{
-                        // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-                        textDescription += '<p>' + linkData.title+ '</p>';
-                    }
-                    catch (error){
-                    }
-                }
-                linkDescription = imgDescription + textDescription;
             }
             catch (error){
-                console.log("unfurl(" + url + ") failed: ")
-                console.log(error);
             }
         }
-        else if(linkPreview.contentType.startsWith("image")){
-            linkDescription += "<img src=\"" + linkPreview.url + "\">"
+        if(!textDescription){
+            try{
+                // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
+                if('twitter_card' in linkData){
+                    if('title' in linkData.twitter_card){
+                        textDescription += '<p>' + linkData.twitter_card.title + '</p>';
+                    }
+                    if('description' in linkData.twitter_card){
+                        textDescription += '<p>' + linkData.twitter_card.description + '</p>';
+                    }
+                }
+            }
+            catch (error){
+            }
         }
-    } catch (error) {
-        console.log("getLinkPreview(" + url + ") failed: ")
+        if(!textDescription){
+            try{
+                // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
+                textDescription += '<p>' + linkData.title+ '</p>';
+            }
+            catch (error){
+            }
+        }
+        linkDescription = imgDescription + textDescription;
+    }
+    catch (error){
+        console.log("unfurl(" + url + ") failed: ")
         console.log(error);
     }
     return linkDescription;
@@ -148,6 +136,7 @@ let extractTitle = (strHTML) => {
     if($('.embedded-post-title').length){
         return $('.embedded-post-title').first().text();
     }
+
     texts = strHTML.trim().replace(/(<([^>]+)>)/ig, '\n').split('\n').map(e => e.trim()).filter(Boolean);
     if(texts){
         return texts[0].trim();
@@ -183,7 +172,6 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                         linkTitle = linkURL;
                     }
                     
-                    // let linkContent = 
                     let linkContent = "<p>URL: <a href=\"" + linkURL +"\">" + linkURL  + "</a></p><p>source: <a href=\"" + entry.link +"\">" + entry.title + "</a></p>";
                     if($('.embedded-post-body', el).length){
                         linkContent = '<p>' + $('.embedded-post-body', el).first().text() + '</p>' + linkContent;
@@ -191,7 +179,18 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                     else if (/twitter.com$/.test(parseURL(linkURL).host.toLocaleLowerCase())){
                         let tweetContent = await renderTweet(linkURL);
                         linkContent = tweetContent + linkContent;
+                    } else if (linkURL == linkTitle){
+                        try {
+                            let linkPreview = await getLinkPreview(url, {timeout:5000});
+                            if (linkPreview.contentType.startsWith("image"))
+                            {
+                                linkContent = '<p><img src="' + linkURL + '"></p>' + linkContent;
+                            }
+                        }
+                        catch(error){
+                        }
                     }
+
                     let linkEntry = {
                         url: linkURL, 
                         title: linkTitle,
