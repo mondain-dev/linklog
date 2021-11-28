@@ -8,116 +8,112 @@ var RSSParser = require('rss-parser');
 let rssParser = new RSSParser();
 var RSS = require('rss');
 
-var getLinkPreview = require("link-preview-js").getLinkPreview;
-var unfurl = require("unfurl.js").unfurl;
+var got = require('got');
+var unfurl = require('unfurl.js').unfurl
 
-async function getLinkContent(url){
+const TimeOutInMS = 5000;
+
+function getLinkContentFromUnfurlObj(obj){
     let linkDescription = "";
-    try{
-        let linkData = await unfurl(url, {timeout:5000});
-        let imgDescription = "";
-        if(!imgDescription){
-            try {
-                imgDescription = "<p><img src=\"" + linkData.open_graph.images[0].url + "\"></p>";
-            }
-            catch(error){
-            }
+    let imgDescription = "";
+    if(!imgDescription){
+        try {
+            imgDescription = "<p><img src=\"" + obj.open_graph.images[0].url + "\"></p>";
         }
-        if(!imgDescription){
-            try {
-                imgDescription = "<p><img src=\"" + linkData.twitter_card.images[0].url + "\" alt=\"" + linkData.twitter_card.images[0].alt +  "\"></p>";
-            }
-            catch(error){
-            }
+        catch(error){
         }
-        let textDescription = "";
-        if(!textDescription){
-            try{
-                // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-                if('open_graph' in linkData){
-                    if('title' in linkData.open_graph){
-                        textDescription += '<p>' + linkData.open_graph.title + '</p>';
-                    }
-                    if('description' in linkData.open_graph){
-                        textDescription += '<p>' + linkData.open_graph.description + '</p>';
-                    }
+    }
+    if(!imgDescription){
+        try {
+            imgDescription = "<p><img src=\"" + obj.twitter_card.images[0].url + "\" alt=\"" + obj.twitter_card.images[0].alt +  "\"></p>";
+        }
+        catch(error){
+        }
+    }
+    let textDescription = "";
+    if(!textDescription){
+        try{
+            // linkDescription += obj.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
+            if('open_graph' in obj){
+                if('title' in obj.open_graph){
+                    textDescription += '<p>' + obj.open_graph.title + '</p>';
+                }
+                if('description' in obj.open_graph){
+                    textDescription += '<p>' + obj.open_graph.description + '</p>';
                 }
             }
-            catch (error){
-            }
         }
-        if(!textDescription){
-            try{
-                // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-                if('twitter_card' in linkData){
-                    if('title' in linkData.twitter_card){
-                        textDescription += '<p>' + linkData.twitter_card.title + '</p>';
-                    }
-                    if('description' in linkData.twitter_card){
-                        textDescription += '<p>' + linkData.twitter_card.description + '</p>';
-                    }
+        catch (error){
+        }
+    }
+    if(!textDescription){
+        try{
+            // linkDescription += obj.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
+            if('twitter_card' in obj){
+                if('title' in obj.twitter_card){
+                    textDescription += '<p>' + obj.twitter_card.title + '</p>';
+                }
+                if('description' in obj.twitter_card){
+                    textDescription += '<p>' + obj.twitter_card.description + '</p>';
                 }
             }
-            catch (error){
-            }
         }
-        if(!textDescription){
-            try{
-                // linkDescription += linkData.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-                textDescription += '<p>' + linkData.title+ '</p>';
-            }
-            catch (error){
-            }
+        catch (error){
         }
-        linkDescription = imgDescription + textDescription;
     }
-    catch (error){
-        console.log("unfurl(" + url + ") failed: ")
-        console.log(error);
+    if(!textDescription){
+        try{
+            // linkDescription += obj.html.replace(/<script.*>,*<\/script>/ims, " ");
+            textDescription += '<p>' + obj.title+ '</p>';
+        }
+        catch (error){
+        }
     }
+    linkDescription = imgDescription + textDescription;
     return linkDescription;
 }
 
-let renderTweet = getLinkContent;
+let renderTweetFromUnfurlObj = getLinkContentFromUnfurlObj;
 
-async function fetchTitle(url){
+async function getLinkTitleFromUnfurlObj(obj){
     let linkTitle = "";
-    try {
-        let linkPreview = await getLinkPreview(url, {timeout:5000});
-        if (linkPreview.contentType.startsWith("text/html"))
-        {
-            try{
-                let linkData = await unfurl(url, {timeout:5000});
-                if(!linkTitle){
-                    try{
-                        linkTitle = linkData.open_graph.title;
-                    }
-                    catch (error){
-                    }    
+    if(!linkTitle){
+        try{
+            linkTitle = obj.open_graph.title;
+        }
+        catch (error){
+        }    
+    }
+    if(!linkTitle){
+        try{
+            linkTitle = obj.twitter_card.title;
+        }
+        catch (error){
+        }
+    }
+    if(!linkTitle){
+        try{
+            linkTitle = obj.title;
+        }
+        catch (error){
+        }
+    }
+    return linkTitle;
+}
+
+async function extractJSONLDTitle(html){
+    let linkTitle = "";
+    let $ = cheerio.load(html);
+    if($('script[type="application/ld+json"]').length){
+        for( el of $('script[type="application/ld+json"]') ){
+            ld = JSON.parse($(el).html())
+            if('@type' in ld){
+                if(ld['@type'] == "NewsArticle" && 'headline' in ld)
+                {
+                    linkTitle = ld['headline']
                 }
-                if(!linkTitle){
-                    try{
-                        linkTitle = linkData.twitter_card.title;
-                    }
-                    catch (error){
-                    }
-                }
-                if(!linkTitle){
-                    try{
-                        linkTitle = linkData.title;
-                    }
-                    catch (error){
-                    }
-                }
-            }
-            catch (error){
-                console.log("unfurl(" + url + ") failed: ")
-                console.log(error);
             }
         }
-    } catch (error) {
-        console.log("getLinkPreview(" + url + ") failed: ")
-        console.log(error);
     }
     return linkTitle;
 }
@@ -164,25 +160,81 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                 let linkURL = $(el).attr('href');
                 if (validateURL(linkURL))
                 {
+                    let linkGotObj;
+                    let linkUnfurlObj;
+                    let linkContentType = '';
+                    let linkHTML = '';
+
+                    // linkTitle
                     let linkTitle = extractTitle($(el).html());
                     if(validateURL(linkTitle) || !linkTitle){
-                        linkTitle = await fetchTitle(linkURL);
+                        if(!linkContentType){
+                            try{
+                                linkGotObj = await got(linkURL);
+                                linkContentType = linkGotObj.headers['content-type'];
+                                if(linkContentType.startsWith("text/html")){
+                                    linkHTML = linkGotObj.body;
+                                }
+                            }
+                            catch(error){}
+                        }
+                        if(linkContentType.startsWith("text/html")){
+                            linkTitle = await extractJSONLDTitle(linkHTML);
+                        }
+                    }                    
+                    if(!linkTitle){
+                        try {
+                            if(!linkUnfurlObj)
+                            {
+                                if(!linkContentType){
+                                    linkGotObj = await got(linkURL);
+                                    linkContentType = linkGotObj.headers['content-type'];
+                                }
+                                if (linkContentType.startsWith("text/html"))
+                                {
+                                    linkUnfurlObj = await unfurl(linkURL, {timeout: TimeOutInMS});
+                                    linkTitle = getLinkTitleFromUnfurlObj(linkUnfurlObj);
+                                }
+                            }
+                        }
+                        catch(error){}
                     }
                     if(!linkTitle){
                         linkTitle = linkURL;
                     }
                     
+                    // linkContent
                     let linkContent = "<p>URL: <a href=\"" + linkURL +"\">" + linkURL  + "</a></p><p>source: <a href=\"" + entry.link +"\">" + entry.title + "</a></p>";
                     if($('.embedded-post-body', el).length){
                         linkContent = '<p>' + $('.embedded-post-body', el).first().text() + '</p>' + linkContent;
                     }
                     else if (/twitter.com$/.test(parseURL(linkURL).host.toLocaleLowerCase())){
-                        let tweetContent = await renderTweet(linkURL);
+                        try {
+                            if(!linkUnfurlObj)
+                            {
+                                if(!linkContentType){
+                                    linkGotObj = await got(linkURL);
+                                    linkContentType = linkGotObj.headers['content-type'];
+                                }
+                                if (linkContentType.startsWith("text/html"))
+                                {
+                                    linkUnfurlObj = await unfurl(linkURL, {timeout: TimeOutInMS});
+                                }
+                            }
+                        }
+                        catch(error){}
+                        let tweetContent = renderTweetFromUnfurlObj(linkUnfurlObj);
                         linkContent = tweetContent + linkContent;
                     } else if (linkURL == linkTitle){
                         try {
-                            let linkPreview = await getLinkPreview(url, {timeout:5000});
-                            if (linkPreview.contentType.startsWith("image"))
+                            if(!linkContentType){
+                                try{
+                                    linkGotObj = await got(linkURL);
+                                    linkContentType = linkGotObj.headers['content-type'];
+                                }
+                                catch(error){}
+                            }
+                            if (linkContentType.startsWith("image"))
                             {
                                 linkContent = '<p><img src="' + linkURL + '"></p>' + linkContent;
                             }
