@@ -75,7 +75,7 @@ function getLinkContentFromUnfurlObj(obj){
 
 let renderTweetFromUnfurlObj = getLinkContentFromUnfurlObj;
 
-async function getLinkTitleFromUnfurlObj(obj){
+function getLinkTitleFromUnfurlObj(obj){
     let linkTitle = "";
     if(!linkTitle){
         try{
@@ -101,17 +101,22 @@ async function getLinkTitleFromUnfurlObj(obj){
     return linkTitle;
 }
 
-async function extractJSONLDTitle(html){
+function extractJSONLDTitle(html){
     let linkTitle = "";
     let $ = cheerio.load(html);
     if($('script[type="application/ld+json"]').length){
         for( el of $('script[type="application/ld+json"]') ){
-            ld = JSON.parse($(el).html())
-            if('@type' in ld){
-                if(ld['@type'] == "NewsArticle" && 'headline' in ld)
-                {
-                    linkTitle = ld['headline']
-                }
+            try{
+                ld = JSON.parse($(el).html());
+                if('@type' in ld){
+                    if(ld['@type'] == "NewsArticle" && 'headline' in ld)
+                    {
+                        linkTitle = ld['headline'];
+                    }
+                }    
+            }
+            catch(error){
+                console.log($(el).html());
             }
         }
     }
@@ -179,7 +184,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                             catch(error){}
                         }
                         if(linkContentType.startsWith("text/html")){
-                            linkTitle = await extractJSONLDTitle(linkHTML);
+                            linkTitle = extractJSONLDTitle(linkHTML);
                         }
                     }                    
                     if(!linkTitle){
