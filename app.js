@@ -22,6 +22,8 @@ const timeOutInMS = 5000;
 const userAgent   = pjson.version + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
+console.log(userAgent);
+console.log(userEmail);
 
 function getHeadersForURL(url){
     let urlHost = parseURL(url).host;
