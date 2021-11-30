@@ -8,100 +8,57 @@ var RSSParser = require('rss-parser');
 let rssParser = new RSSParser();
 var RSS = require('rss');
 
-var got = require('got');
-var unfurl = require('unfurl.js').unfurl
+var fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+var htmlEncodingSniffer = require("html-encoding-sniffer");
+var whatwgEncoding = require("whatwg-encoding");
+var metascraper = require('metascraper')([
+    require('metascraper-description')(),
+    require('metascraper-image')(),
+    require('metascraper-title')()
+  ])
 
-const TimeOutInMS = 5000;
+var pjson = require('./package.json');
+const timeOutInMS = 5000;
+const userAgent   = pjson.version + "/" + pjson.version;
+const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
+                    (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
 
-function getLinkContentFromUnfurlObj(obj){
+function getHeadersForURL(url){
+    let urlHost = parseURL(url).host;
+    let domainsCustomUserAgent = ['bloomberg.com', 'ncbi.nlm.nih.gov'];
+    // let domainsDefaultUserAgent = [];
+    if(domainsCustomUserAgent.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
+    {
+        return {'User-Agent': userAgent, 'From': userEmail};
+    }
+    else{
+        return {'User-Agent': 'facebookexternalhit'};
+    }
+}
+
+async function getLinkContentFromHTML(html, url){
     let linkDescription = "";
     let imgDescription = "";
-    if(!imgDescription){
-        try {
-            imgDescription = "<p><img src=\"" + obj.open_graph.images[0].url + "\"></p>";
-        }
-        catch(error){
-        }
-    }
-    if(!imgDescription){
-        try {
-            imgDescription = "<p><img src=\"" + obj.twitter_card.images[0].url + "\" alt=\"" + obj.twitter_card.images[0].alt +  "\"></p>";
-        }
-        catch(error){
-        }
-    }
     let textDescription = "";
-    if(!textDescription){
-        try{
-            // linkDescription += obj.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-            if('open_graph' in obj){
-                if('title' in obj.open_graph){
-                    textDescription += '<p>' + obj.open_graph.title + '</p>';
-                }
-                if('description' in obj.open_graph){
-                    textDescription += '<p>' + obj.open_graph.description + '</p>';
-                }
-            }
-        }
-        catch (error){
-        }
+    let metadata = await metascraper({html, url});
+    if(metadata.image){
+        imgDescription = "<p><img src=\"" + metadata.image + "\"></p>";
     }
-    if(!textDescription){
-        try{
-            // linkDescription += obj.oEmbed.html.replace(/<script.*>,*<\/script>/ims, " ");
-            if('twitter_card' in obj){
-                if('title' in obj.twitter_card){
-                    textDescription += '<p>' + obj.twitter_card.title + '</p>';
-                }
-                if('description' in obj.twitter_card){
-                    textDescription += '<p>' + obj.twitter_card.description + '</p>';
-                }
-            }
-        }
-        catch (error){
-        }
+    if(metadata.title)
+    {
+        textDescription += '<p>' + metadata.title + '</p>';
     }
-    if(!textDescription){
-        try{
-            // linkDescription += obj.html.replace(/<script.*>,*<\/script>/ims, " ");
-            textDescription += '<p>' + obj.title+ '</p>';
-        }
-        catch (error){
-        }
+    if(metadata.description){
+        textDescription += '<p>' + metadata.description + '</p>';
     }
     linkDescription = imgDescription + textDescription;
     return linkDescription;
 }
 
-let renderTweetFromUnfurlObj = getLinkContentFromUnfurlObj;
 
-function getLinkTitleFromUnfurlObj(obj){
-    let linkTitle = "";
-    if(!linkTitle){
-        try{
-            linkTitle = obj.open_graph.title;
-        }
-        catch (error){
-        }    
-    }
-    if(!linkTitle){
-        try{
-            linkTitle = obj.twitter_card.title;
-        }
-        catch (error){
-        }
-    }
-    if(!linkTitle){
-        try{
-            linkTitle = obj.title;
-        }
-        catch (error){
-        }
-    }
-    return linkTitle;
-}
+let renderTweetFromHTML = getLinkContentFromHTML;
 
-function extractJSONLDTitle(html){
+async function getTitleFromHTML(html, url){
     let linkTitle = "";
     let $ = cheerio.load(html);
     if($('script[type="application/ld+json"]').length){
@@ -116,8 +73,13 @@ function extractJSONLDTitle(html){
                 }    
             }
             catch(error){
-                console.log($(el).html());
             }
+        }
+    }
+    if(!linkTitle){
+        let metadata = await metascraper({html, url});
+        if(metadata.title){
+            linkTitle = metadata.title;
         }
     }
     return linkTitle;
@@ -165,44 +127,29 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                 let linkURL = $(el).attr('href');
                 if (validateURL(linkURL))
                 {
-                    let linkGotObj;
-                    let linkUnfurlObj;
+                    let ret;
                     let linkContentType = '';
                     let linkHTML = '';
-
+                    
                     // linkTitle
                     let linkTitle = extractTitle($(el).html());
                     if(validateURL(linkTitle) || !linkTitle){
                         if(!linkContentType){
                             try{
-                                linkGotObj = await got(linkURL);
-                                linkContentType = linkGotObj.headers['content-type'];
+                                if(!ret){
+                                    ret = await fetch(linkURL, {headers: getHeadersForURL(linkURL)});
+                                }
+                                linkContentType = ret.headers.get('content-type');
                                 if(linkContentType.startsWith("text/html")){
-                                    linkHTML = linkGotObj.body;
+                                    let buf = Buffer.from(await ret.arrayBuffer());
+                                    linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf));
                                 }
                             }
                             catch(error){}
                         }
                         if(linkContentType.startsWith("text/html")){
-                            linkTitle = extractJSONLDTitle(linkHTML);
+                            linkTitle = await getTitleFromHTML(linkHTML, linkURL);
                         }
-                    }                    
-                    if(!linkTitle){
-                        try {
-                            if(!linkUnfurlObj)
-                            {
-                                if(!linkContentType){
-                                    linkGotObj = await got(linkURL);
-                                    linkContentType = linkGotObj.headers['content-type'];
-                                }
-                                if (linkContentType.startsWith("text/html"))
-                                {
-                                    linkUnfurlObj = await unfurl(linkURL, {timeout: TimeOutInMS});
-                                    linkTitle = getLinkTitleFromUnfurlObj(linkUnfurlObj);
-                                }
-                            }
-                        }
-                        catch(error){}
                     }
                     if(!linkTitle){
                         linkTitle = linkURL;
@@ -214,37 +161,34 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                         linkContent = '<p>' + $('.embedded-post-body', el).first().text() + '</p>' + linkContent;
                     }
                     else if (/twitter.com$/.test(parseURL(linkURL).host.toLocaleLowerCase())){
-                        try {
-                            if(!linkUnfurlObj)
-                            {
-                                if(!linkContentType){
-                                    linkGotObj = await got(linkURL);
-                                    linkContentType = linkGotObj.headers['content-type'];
+                        if(!linkHTML){
+                            try {
+                                if(!ret){
+                                    ret = await fetch(linkURL, {headers: getHeadersForURL(linkURL)});
                                 }
-                                if (linkContentType.startsWith("text/html"))
-                                {
-                                    linkUnfurlObj = await unfurl(linkURL, {timeout: TimeOutInMS});
+                                linkContentType = ret.headers.get('content-type');
+                                if(linkContentType.startsWith("text/html")){
+                                    let buf = Buffer.from(await ret.arrayBuffer());
+                                    linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf));
                                 }
                             }
+                            catch(error){}
                         }
-                        catch(error){}
-                        let tweetContent = renderTweetFromUnfurlObj(linkUnfurlObj);
+                        let tweetContent = await renderTweetFromHTML(linkHTML, linkURL);
                         linkContent = tweetContent + linkContent;
                     } else if (linkURL == linkTitle){
-                        try {
-                            if(!linkContentType){
-                                try{
-                                    linkGotObj = await got(linkURL);
-                                    linkContentType = linkGotObj.headers['content-type'];
+                        if(!linkContentType){
+                            try {
+                                if(!ret){
+                                    ret = await fetch(linkURL, {headers: getHeadersForURL(linkURL)});
                                 }
-                                catch(error){}
+                                linkContentType = ret.headers.get('content-type');
                             }
-                            if (linkContentType.startsWith("image"))
-                            {
-                                linkContent = '<p><img src="' + linkURL + '"></p>' + linkContent;
-                            }
+                            catch(error){}                            
                         }
-                        catch(error){
+                        if (linkContentType.startsWith("image"))
+                        {
+                            linkContent = '<p><img src="' + linkURL + '"></p>' + linkContent;
                         }
                     }
 
@@ -255,7 +199,6 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                         date: entry.pubDate,
                         author: entry.author,
                     };
-
                     if( ! links.map((e)=> {return e.url}).includes(linkEntry.url) ){
                         links.push(linkEntry);
                     }
