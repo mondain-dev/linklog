@@ -19,7 +19,7 @@ var metascraper = require('metascraper')([
 
 var pjson = require('./package.json');
 const timeOutInMS = 5000;
-const userAgent   = pjson.version + "/" + pjson.version;
+const userAgent   = pjson.name + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
 console.log(userAgent);
