@@ -18,16 +18,13 @@ var metascraper = require('metascraper')([
   ])
 
 var pjson = require('./package.json');
-const timeOutInMS = 5000;
-const userAgent   = pjson.name + "/" + pjson.version;
+const userAgent   = pjson.version + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
-console.log(userAgent);
-console.log(userEmail);
 
 function getHeadersForURL(url){
     let urlHost = parseURL(url).host;
-    let domainsCustomUserAgent = ['bloomberg.com', 'ncbi.nlm.nih.gov'];
+    let domainsCustomUserAgent = ['bloomberg.com', 'ncbi.nlm.nih.gov', 'jstor.org'];
     // let domainsDefaultUserAgent = [];
     if(domainsCustomUserAgent.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
     {
@@ -36,6 +33,24 @@ function getHeadersForURL(url){
     else{
         return {'User-Agent': 'facebookexternalhit'};
     }
+}
+
+async function getFromURL(url){
+    const AbortController = globalThis.AbortController || await import('abort-controller');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {controller.abort();}, 5000);
+
+    let ret;
+    try{
+        ret = await fetch(url, {headers: getHeadersForURL(url), signal: controller.signal});
+    }
+    catch(error){
+        console.log('fetch(' + linkURL + ') failed.');
+    }
+    finally{
+        clearTimeout(timeout);
+    }
+    return ret;
 }
 
 async function getLinkContentFromHTML(html, url){
@@ -62,19 +77,21 @@ let renderTweetFromHTML = getLinkContentFromHTML;
 
 async function getTitleFromHTML(html, url){
     let linkTitle = "";
-    let $ = cheerio.load(html);
-    if($('script[type="application/ld+json"]').length){
-        for( el of $('script[type="application/ld+json"]') ){
-            try{
-                ld = JSON.parse($(el).html());
-                if('@type' in ld){
-                    if(ld['@type'] == "NewsArticle" && 'headline' in ld)
-                    {
-                        linkTitle = ld['headline'];
-                    }
-                }    
-            }
-            catch(error){
+    if(!linkTitle){
+        let $ = cheerio.load(html);
+        if($('script[type="application/ld+json"]').length){
+            for( el of $('script[type="application/ld+json"]') ){
+                try{
+                    ld = JSON.parse($(el).html());
+                    if('@type' in ld){
+                        if(ld['@type'] == "NewsArticle" && 'headline' in ld)
+                        {
+                            linkTitle = ld['headline'];
+                        }
+                    }    
+                }
+                catch(error){
+                }
             }
         }
     }
@@ -139,15 +156,17 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                         if(!linkContentType){
                             try{
                                 if(!ret){
-                                    ret = await fetch(linkURL, {headers: getHeadersForURL(linkURL)});
+                                    ret = await getFromURL(linkURL);
                                 }
                                 linkContentType = ret.headers.get('content-type');
                                 if(linkContentType.startsWith("text/html")){
                                     let buf = Buffer.from(await ret.arrayBuffer());
-                                    linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf));
+                                    linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
                                 }
                             }
-                            catch(error){}
+                            catch(error){
+                                console.log(error)
+                            }
                         }
                         if(linkContentType.startsWith("text/html")){
                             linkTitle = await getTitleFromHTML(linkHTML, linkURL);
@@ -166,12 +185,12 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                         if(!linkHTML){
                             try {
                                 if(!ret){
-                                    ret = await fetch(linkURL, {headers: getHeadersForURL(linkURL)});
+                                    ret = await getFromURL(linkURL);
                                 }
                                 linkContentType = ret.headers.get('content-type');
                                 if(linkContentType.startsWith("text/html")){
                                     let buf = Buffer.from(await ret.arrayBuffer());
-                                    linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf));
+                                    linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
                                 }
                             }
                             catch(error){}
@@ -182,7 +201,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                         if(!linkContentType){
                             try {
                                 if(!ret){
-                                    ret = await fetch(linkURL, {headers: getHeadersForURL(linkURL)});
+                                    ret = await getFromURL(linkURL);
                                 }
                                 linkContentType = ret.headers.get('content-type');
                             }
