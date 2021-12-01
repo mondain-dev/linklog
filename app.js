@@ -24,7 +24,7 @@ const userAgent   = pjson.version + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
 
-const domainsCustomUserAgent = ['bloomberg.com', 'ncbi.nlm.nih.gov', 'jstor.org'];
+const domainsCustomUserAgent = ['bloomberg.com', 'ncbi.nlm.nih.gov', 'jstor.org', 'washingtonpost.com'];
 function getHeadersForURL(url){
     let urlHost = parseURL(url).host;
     if(domainsCustomUserAgent.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
@@ -36,7 +36,7 @@ function getHeadersForURL(url){
     }
 }
 
-const domainsUseApify = ['bloomberg.com', 'washingtonpost.com'];
+const domainsUseApify = ['bloomberg.com'];
 async function getHTMLApify(url){
     let endpoint = 'https://api.apify.com/v2/acts/mtrunkat~url-list-download-html/run-sync-get-dataset-items?token=' + process.env.APIFY_API_KEY;
     let input    = {
