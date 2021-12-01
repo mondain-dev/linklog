@@ -36,7 +36,7 @@ function getHeadersForURL(url){
     }
 }
 
-const domainsUseApify = ['bloomberg.com'];
+const domainsUseApify = ['bloomberg.com', 'washingtonpost.com'];
 async function getHTMLApify(url){
     let endpoint = 'https://api.apify.com/v2/acts/mtrunkat~url-list-download-html/run-sync-get-dataset-items?token=' + process.env.APIFY_API_KEY;
     let input    = {
