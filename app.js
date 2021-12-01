@@ -9,6 +9,8 @@ let rssParser = new RSSParser();
 var RSS = require('rss');
 
 var fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+var AbortController = require("node-abort-controller").AbortController;
+
 var htmlEncodingSniffer = require("html-encoding-sniffer");
 var whatwgEncoding = require("whatwg-encoding");
 var metascraper = require('metascraper')([
@@ -36,7 +38,6 @@ function getHeadersForURL(url){
 }
 
 async function getFromURL(url){
-    const AbortController = globalThis.AbortController || await import('abort-controller');
     const controller = new AbortController();
     const timeout = setTimeout(() => {controller.abort();}, 5000);
 
