@@ -23,6 +23,7 @@ var pjson = require('./package.json');
 const userAgent   = pjson.version + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
+console.log(process.env.APIFY_API_KEY)
 
 function getHeadersForURL(url){
     let urlHost = parseURL(url).host;
