@@ -23,6 +23,7 @@ jobs:
         env:
           APIFY_API_KEY: ${{ secrets.APIFY_API_KEY }}
         run: |
+          echo $APIFY_API_KEY
           npm install
           npm run build
 
