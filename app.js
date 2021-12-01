@@ -24,10 +24,9 @@ const userAgent   = pjson.version + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
 
+const domainsCustomUserAgent = ['bloomberg.com', 'ncbi.nlm.nih.gov', 'jstor.org'];
 function getHeadersForURL(url){
     let urlHost = parseURL(url).host;
-    let domainsCustomUserAgent = ['bloomberg.com', 'ncbi.nlm.nih.gov', 'jstor.org'];
-    // let domainsDefaultUserAgent = [];
     if(domainsCustomUserAgent.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
     {
         return {'User-Agent': userAgent, 'From': userEmail};
@@ -37,21 +36,46 @@ function getHeadersForURL(url){
     }
 }
 
-async function getFromURL(url){
+const domainsUseApify = ['bloomberg.com'];
+async function getHTMLApify(url){
+    let endpoint = 'https://api.apify.com/v2/acts/mtrunkat~url-list-download-html/run-sync-get-dataset-items?token=' + process.env.APIFY_API_KEY;
+    let input    = {
+        "requestListSources": [
+            {
+                "url": url
+            }
+        ],
+        "proxyConfiguration": {
+            "useApifyProxy": true,
+            "apifyProxyCountry": "US"
+        },
+        "useChrome": false
+    }
+    let res = await fetch(endpoint, {
+        method: 'post',
+        body: JSON.stringify(input),
+        headers: {'Content-Type': 'application/json'}
+    });
+    let buf = Buffer.from(await res.arrayBuffer());
+    let data = JSON.parse(whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'})));
+    return data[0].fullHtml;
+}
+
+async function getPage(url){
     const controller = new AbortController();
     const timeout = setTimeout(() => {controller.abort();}, 5000);
 
-    let ret;
+    let res;
     try{
-        ret = await fetch(url, {headers: getHeadersForURL(url), signal: controller.signal});
+        res = await fetch(url, {headers: getHeadersForURL(url), signal: controller.signal});
     }
     catch(error){
-        console.log('fetch(' + linkURL + ') failed.');
+        console.log('fetch(' + url + ') failed.');
     }
     finally{
         clearTimeout(timeout);
     }
-    return ret;
+    return res;
 }
 
 async function getLinkContentFromHTML(html, url){
@@ -72,7 +96,6 @@ async function getLinkContentFromHTML(html, url){
     linkDescription = imgDescription + textDescription;
     return linkDescription;
 }
-
 
 let renderTweetFromHTML = getLinkContentFromHTML;
 
@@ -147,7 +170,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                 let linkURL = $(el).attr('href');
                 if (validateURL(linkURL))
                 {
-                    let ret;
+                    let res;
                     let linkContentType = '';
                     let linkHTML = '';
                     
@@ -156,13 +179,20 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                     if(validateURL(linkTitle) || !linkTitle){
                         if(!linkContentType){
                             try{
-                                if(!ret){
-                                    ret = await getFromURL(linkURL);
+                                if(!res){
+                                    res = await getPage(linkURL);
                                 }
-                                linkContentType = ret.headers.get('content-type');
+                                linkContentType = res.headers.get('content-type');
                                 if(linkContentType.startsWith("text/html")){
-                                    let buf = Buffer.from(await ret.arrayBuffer());
-                                    linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
+                                    let urlHost = parseURL(linkURL).host;
+                                    if(domainsUseApify.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
+                                    {
+                                        linkHTML = await getHTMLApify(linkURL);
+                                    }
+                                    else{
+                                        let buf = Buffer.from(await res.arrayBuffer());
+                                        linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));    
+                                    }
                                 }
                             }
                             catch(error){
@@ -185,13 +215,20 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                     else if (/twitter.com$/.test(parseURL(linkURL).host.toLocaleLowerCase())){
                         if(!linkHTML){
                             try {
-                                if(!ret){
-                                    ret = await getFromURL(linkURL);
+                                if(!res){
+                                    res = await getPage(linkURL);
                                 }
-                                linkContentType = ret.headers.get('content-type');
+                                linkContentType = res.headers.get('content-type');
                                 if(linkContentType.startsWith("text/html")){
-                                    let buf = Buffer.from(await ret.arrayBuffer());
-                                    linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
+                                    let urlHost = parseURL(linkURL).host;
+                                    if(domainsUseApify.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
+                                    {
+                                        linkHTML = await getHTMLApify(linkURL);
+                                    }
+                                    else{
+                                        let buf = Buffer.from(await res.arrayBuffer());
+                                        linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));    
+                                    }                                    
                                 }
                             }
                             catch(error){}
@@ -201,10 +238,10 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                     } else if (linkURL == linkTitle){
                         if(!linkContentType){
                             try {
-                                if(!ret){
-                                    ret = await getFromURL(linkURL);
+                                if(!res){
+                                    res = await getPage(linkURL);
                                 }
-                                linkContentType = ret.headers.get('content-type');
+                                linkContentType = res.headers.get('content-type');
                             }
                             catch(error){}                            
                         }
