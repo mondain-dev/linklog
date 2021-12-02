@@ -1,0 +1,12 @@
+^([a-z]+\s+)?t?here$
+^links?$
+^[a-z]+\s+link$
+^([a-z]+\s+)*report(s|ed)?$
+^([a-z]+\s+)*review(s|ed)?$
+^([a-z]+\s+)*writes?$
+^([a-z]+\s+)*wrote$
+^([a-z]+\s+)?articles?$
+^([a-z]+\s+)?news$
+^([a-z]+\s+)?sites?$
+^([a-z]+\s+)?this$
+^(another|also)(\s+[a-z]+)?$
