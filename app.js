@@ -20,7 +20,8 @@ var metascraper = require('metascraper')([
     require('metascraper-title')()
 ])
 
-var pjson = require('./package.json');
+var config = require('./config.json')
+var pjson  = require('./package.json');
 const userAgent   = pjson.version + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
@@ -34,12 +35,7 @@ function isStopWordTitle(title){
                         /^([a-z]+\s+)?writes?$/, /^([a-z]+\s+)?wrote$/, 
                         /^([a-z]+\s+)?report(s|ed)?$/, /^([a-z]+\s+)?review(s|ed)?$/, 
                         /^([a-z]+\s+)?articles?$/, /^([a-z]+\s+)?news$/];
-    const customStopWords = ['news', 'article', 'articles', 'write', 'writes', 'wrote', 
-                             'written', 'link', 'click', 'links', 'news', 'new', 'interesting',
-                             'provide', 'provides', 'provided', 'give', 'gives', 'gave', 
-                             'opinion', 'opinions', 'view', 'views', 'interpretation', 
-                             'takes', 'point', 'points', 'piece', 'pieces', 'example', 'examples',
-                             'really', 'very', 'nice']
+    const customStopWords = config.customStopWords;
     result = stopRegex.some((s)=>{return s.exec(title_)});
     if(!result)
     {
@@ -51,10 +47,9 @@ function isStopWordTitle(title){
     return result;
 }
 
-const domainsCustomUserAgent = ['bloomberg.com', 'ncbi.nlm.nih.gov', 'jstor.org', 'washingtonpost.com'];
 function getHeadersForURL(url){
     let urlHost = parseURL(url).host;
-    if(domainsCustomUserAgent.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
+    if(config.domainsCustomUserAgent.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
     {
         return {'User-Agent': userAgent, 'From': userEmail};
     }
@@ -63,9 +58,9 @@ function getHeadersForURL(url){
     }
 }
 
-const domainsUseApify = ['bloomberg.com'];
 async function getHTMLApify(url){
-    let endpoint = 'https://api.apify.com/v2/acts/mtrunkat~url-list-download-html/run-sync-get-dataset-items?token=' + process.env.APIFY_API_KEY;
+    let endpoint = new URL(config.endpointApify); 
+    endpoint.searchParams.append("token", process.env.APIFY_API_KEY);
     let input    = {
         "requestListSources": [
             {
@@ -78,7 +73,7 @@ async function getHTMLApify(url){
         },
         "useChrome": false
     }
-    let res = await fetch(endpoint, {
+    let res = await fetch(endpoint.href, {
         method: 'post',
         body: JSON.stringify(input),
         headers: {'Content-Type': 'application/json'}
@@ -205,7 +200,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                     let linkTitle = ''
                     if(useLinkText)
                     {
-                        extractLinkText($(el).html());
+                        linkTitle = extractLinkText($(el).html());
                     }
                     if(validateURL(linkTitle) || !linkTitle || isStopWordTitle(linkTitle.toLowerCase())){
                         if(!linkContentType){
@@ -216,7 +211,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                                 linkContentType = res.headers.get('content-type');
                                 if(linkContentType.startsWith("text/html")){
                                     let urlHost = parseURL(linkURL).host;
-                                    if(domainsUseApify.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
+                                    if(config.domainsUseApify.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
                                     {
                                         linkHTML = await getHTMLApify(linkURL);
                                     }
@@ -252,7 +247,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                                 linkContentType = res.headers.get('content-type');
                                 if(linkContentType.startsWith("text/html")){
                                     let urlHost = parseURL(linkURL).host;
-                                    if(domainsUseApify.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
+                                    if(config.domainsUseApify.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
                                     {
                                         linkHTML = await getHTMLApify(linkURL);
                                     }
