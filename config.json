@@ -1,0 +1,20 @@
+{
+    "endpointApify": "https://api.apify.com/v2/acts/mtrunkat~url-list-download-html/run-sync-get-dataset-items",
+    "domainsCustomUserAgent": [
+        "bloomberg.com", 
+        "ncbi.nlm.nih.gov", 
+        "jstor.org", 
+        "washingtonpost.com"
+    ],
+    "domainsUseApify": [
+        "bloomberg.com"
+    ],
+    "customStopWords": [
+        "news", "article", "articles", "write", "writes", "wrote", 
+        "written", "link", "click", "links", "news", "new", "interesting",
+        "provide", "provides", "provided", "give", "gives", "gave", 
+        "opinion", "opinions", "view", "views", "interpretation", 
+        "takes", "point", "points", "piece", "pieces", "example", "examples",
+        "really", "very", "nice", "best"
+    ]
+}
