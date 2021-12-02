@@ -7,6 +7,7 @@ var cheerio = require("cheerio");
 var RSSParser = require('rss-parser');
 let rssParser = new RSSParser();
 var RSS = require('rss');
+var sw = require('stopword');
 
 var fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 var AbortController = require("node-abort-controller").AbortController;
@@ -17,12 +18,38 @@ var metascraper = require('metascraper')([
     require('metascraper-description')(),
     require('metascraper-image')(),
     require('metascraper-title')()
-  ])
+])
 
 var pjson = require('./package.json');
 const userAgent   = pjson.version + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
+
+function isStopWordTitle(title){
+    let title_ = title.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g," ").trim()
+    let result = false;
+    const  stopRegex = [/^links?$/, /^[a-z]+\s+link$/, 
+                        /^([a-z]+\s+)?this$/, /^([a-z]+\s+)?t?here$/,
+                        /(another|also)(\s+[a-z]+)?/,
+                        /^([a-z]+\s+)?writes?$/, /^([a-z]+\s+)?wrote$/, 
+                        /^([a-z]+\s+)?report(s|ed)?$/, /^([a-z]+\s+)?review(s|ed)?$/, 
+                        /^([a-z]+\s+)?articles?$/, /^([a-z]+\s+)?news$/];
+    const customStopWords = ['news', 'article', 'articles', 'write', 'writes', 'wrote', 
+                             'written', 'link', 'click', 'links', 'news', 'new', 'interesting',
+                             'provide', 'provides', 'provided', 'give', 'gives', 'gave', 
+                             'opinion', 'opinions', 'view', 'views', 'interpretation', 
+                             'takes', 'point', 'points', 'piece', 'pieces', 'example', 'examples',
+                             'really', 'very', 'nice']
+    result = stopRegex.some((s)=>{return s.exec(title_)});
+    if(!result)
+    {
+        if(sw.removeStopwords(title_.split(' ').filter(Boolean), [...sw.en, ...sw.fr, ...customStopWords]).length == 0)
+        {
+            result = true;
+        }
+    }
+    return result;
+}
 
 const domainsCustomUserAgent = ['bloomberg.com', 'ncbi.nlm.nih.gov', 'jstor.org', 'washingtonpost.com'];
 function getHeadersForURL(url){
@@ -137,10 +164,10 @@ function validateURL(string) {
     return true;
 }
 
-let extractTitle = (strHTML) => {
+let extractLinkText = (strHTML) => {
     const $ = cheerio.load(strHTML);
     if($('.embedded-post-title').length){
-        return $('.embedded-post-title').first().text();
+        return $('.embedded-post-title').first().text().trim();
     }
 
     texts = strHTML.trim().replace(/(<([^>]+)>)/ig, '\n').split('\n').map(e => e.trim()).filter(Boolean);
@@ -152,7 +179,7 @@ let extractTitle = (strHTML) => {
     }
 }
 
-let extractLinks = async (entry, excludes, cssSelector = 'a') => {
+let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true) => {
     let entryContent = '';
     if('content:encoded' in entry){
         entryContent = entry['content:encoded'];
@@ -175,8 +202,12 @@ let extractLinks = async (entry, excludes, cssSelector = 'a') => {
                     let linkHTML = '';
                     
                     // linkTitle
-                    let linkTitle = extractTitle($(el).html());
-                    if(validateURL(linkTitle) || !linkTitle){
+                    let linkTitle = ''
+                    if(useLinkText)
+                    {
+                        extractLinkText($(el).html());
+                    }
+                    if(validateURL(linkTitle) || !linkTitle || isStopWordTitle(linkTitle.toLowerCase())){
                         if(!linkContentType){
                             try{
                                 if(!res){
@@ -291,8 +322,12 @@ let loadFeeds = async (feedConfig) => {
                         }
                     }               
                 }
+                let useLinkText = true;
+                if('useLinkText' in f){
+                    useLinkText = f.useLinkText;
+                }
                 if(includeEntry){
-                    let extractedLinks = await extractLinks(entry, f.link.excludes, f.link.selector);
+                    let extractedLinks = await extractLinks(entry, f.link.excludes, f.link.selector, useLinkText);
                     entries.push(...extractedLinks);
                 }
             }
