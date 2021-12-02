@@ -26,17 +26,12 @@ const userAgent   = pjson.version + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
 
+const customStopWords = fs.existsSync('./stopwords.txt') ? fs.readFileSync('./stopwords.txt', 'utf-8').split('\n').filter(Boolean) : [];
+const customStopRegex = fs.existsSync('./stopregex.txt') ? fs.readFileSync('./stopregex.txt', 'utf-8').split('\n').filter(Boolean).map((s)=>{return new RegExp(s);}) : [];
 function isStopWordTitle(title){
-    let title_ = title.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g," ").trim()
+    let title_ = title.toLocaleLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g," ").trim()
     let result = false;
-    const  stopRegex = [/^links?$/, /^[a-z]+\s+link$/, 
-                        /^([a-z]+\s+)?this$/, /^([a-z]+\s+)?t?here$/,
-                        /(another|also)(\s+[a-z]+)?/,
-                        /^([a-z]+\s+)?writes?$/, /^([a-z]+\s+)?wrote$/, 
-                        /^([a-z]+\s+)?report(s|ed)?$/, /^([a-z]+\s+)?review(s|ed)?$/, 
-                        /^([a-z]+\s+)?articles?$/, /^([a-z]+\s+)?news$/];
-    const customStopWords = config.customStopWords;
-    result = stopRegex.some((s)=>{return s.exec(title_)});
+    result = customStopRegex.some((s)=>{return s.exec(title_)});
     if(!result)
     {
         if(sw.removeStopwords(title_.split(' ').filter(Boolean), [...sw.en, ...sw.fr, ...customStopWords]).length == 0)
@@ -202,7 +197,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                     {
                         linkTitle = extractLinkText($(el).html());
                     }
-                    if(validateURL(linkTitle) || !linkTitle || isStopWordTitle(linkTitle.toLowerCase())){
+                    if(validateURL(linkTitle) || !linkTitle || isStopWordTitle(linkTitle)){
                         if(!linkContentType){
                             try{
                                 if(!res){

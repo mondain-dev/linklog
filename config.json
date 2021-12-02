@@ -8,13 +8,5 @@
     ],
     "domainsUseApify": [
         "bloomberg.com"
-    ],
-    "customStopWords": [
-        "news", "article", "articles", "write", "writes", "wrote", 
-        "written", "link", "click", "links", "news", "new", "interesting",
-        "provide", "provides", "provided", "give", "gives", "gave", 
-        "opinion", "opinions", "view", "views", "interpretation", 
-        "takes", "point", "points", "piece", "pieces", "example", "examples",
-        "really", "very", "nice", "best"
     ]
 }
