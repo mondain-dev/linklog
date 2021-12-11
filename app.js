@@ -9,26 +9,12 @@ let rssParser = new RSSParser();
 var RSS = require('rss');
 var sw = require('stopword');
 
-var fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-var AbortController = require("node-abort-controller").AbortController;
-
-var htmlEncodingSniffer = require("html-encoding-sniffer");
-var whatwgEncoding = require("whatwg-encoding");
-var metascraper = require('metascraper')([
-    require('metascraper-description')(),
-    require('metascraper-image')(),
-    require('metascraper-title')()
-])
-
 var config = require('./config.json')
-var pjson  = require('./package.json');
-const userAgent   = pjson.version + "/" + pjson.version;
-const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
-                    (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
+var LinkContent = require('./LinkContent.js')
 
 const customStopWords = fs.existsSync('./stopwords.txt') ? fs.readFileSync('./stopwords.txt', 'utf-8').split('\n').filter(Boolean) : [];
 const customStopRegex = fs.existsSync('./stopregex.txt') ? fs.readFileSync('./stopregex.txt', 'utf-8').split('\n').filter(Boolean).map((s)=>{return new RegExp(s);}) : [];
-function isStopWordTitle(title){
+function titleIsStopWord(title){
     let title_ = title.toLocaleLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g," ").trim()
     let result = false;
     result = customStopRegex.some((s)=>{return s.exec(title_)});
@@ -42,109 +28,6 @@ function isStopWordTitle(title){
     return result;
 }
 
-function getHeadersForURL(url){
-    let urlHost = parseURL(url).host;
-    if(config.domainsCustomUserAgent.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
-    {
-        return {'User-Agent': userAgent, 'From': userEmail};
-    }
-    else{
-        return {'User-Agent': 'facebookexternalhit'};
-    }
-}
-
-async function getHTMLApify(url){
-    let endpoint = new URL(config.endpointApify); 
-    endpoint.searchParams.append("token", process.env.APIFY_API_KEY);
-    let input    = {
-        "requestListSources": [
-            {
-                "url": url
-            }
-        ],
-        "proxyConfiguration": {
-            "useApifyProxy": true,
-            "apifyProxyCountry": "US"
-        },
-        "useChrome": false
-    }
-    let res = await fetch(endpoint.href, {
-        method: 'post',
-        body: JSON.stringify(input),
-        headers: {'Content-Type': 'application/json'}
-    });
-    let buf = Buffer.from(await res.arrayBuffer());
-    let data = JSON.parse(whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'})));
-    return data[0].fullHtml;
-}
-
-async function getPage(url){
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {controller.abort();}, 5000);
-
-    let res;
-    try{
-        res = await fetch(url, {headers: getHeadersForURL(url), signal: controller.signal});
-    }
-    catch(error){
-        console.log('fetch(' + url + ') failed.');
-    }
-    finally{
-        clearTimeout(timeout);
-    }
-    return res;
-}
-
-async function getLinkContentFromHTML(html, url){
-    let linkDescription = "";
-    let imgDescription = "";
-    let textDescription = "";
-    let metadata = await metascraper({html, url});
-    if(metadata.image){
-        imgDescription = "<p><img src=\"" + metadata.image + "\"></p>";
-    }
-    if(metadata.title)
-    {
-        textDescription += '<p>' + metadata.title + '</p>';
-    }
-    if(metadata.description){
-        textDescription += '<p>' + metadata.description + '</p>';
-    }
-    linkDescription = imgDescription + textDescription;
-    return linkDescription;
-}
-
-let renderTweetFromHTML = getLinkContentFromHTML;
-
-async function getTitleFromHTML(html, url){
-    let linkTitle = "";
-    if(!linkTitle){
-        let $ = cheerio.load(html);
-        if($('script[type="application/ld+json"]').length){
-            for( el of $('script[type="application/ld+json"]') ){
-                try{
-                    ld = JSON.parse($(el).html());
-                    if('@type' in ld){
-                        if(ld['@type'] == "NewsArticle" && 'headline' in ld)
-                        {
-                            linkTitle = ld['headline'];
-                        }
-                    }    
-                }
-                catch(error){
-                }
-            }
-        }
-    }
-    if(!linkTitle){
-        let metadata = await metascraper({html, url});
-        if(metadata.title){
-            linkTitle = metadata.title;
-        }
-    }
-    return linkTitle;
-}
-
 function validateURL(string) {
     try {
       let url = new URL(string);
@@ -152,6 +35,20 @@ function validateURL(string) {
       return false;  
     }
     return true;
+}
+
+let titleIsURL = (title, url) => {
+    if(validateURL(title))
+    {
+        return true;
+    }
+    if(url.replace(/^[a-zA-Z]*:\/\//, '').startsWith(title.replace(/(…$)|(\.\.\.$)/, '').trim())){
+        return true;
+    }
+    if(url.replace(/^[a-zA-Z]*:\/\/www\./, '').startsWith(title.replace(/(…$)|(\.\.\.$)/, '').trim())){
+        return true;
+    }
+    return false;
 }
 
 let extractLinkText = (strHTML) => {
@@ -187,102 +84,55 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                 let linkURL = $(el).attr('href');
                 if (validateURL(linkURL))
                 {
-                    let res;
-                    let linkContentType = '';
-                    let linkHTML = '';
-                    
+                    let linkContent;
                     // linkTitle
-                    let linkTitle = ''
+                    let linkTitle = '';
                     if(useLinkText)
                     {
                         linkTitle = extractLinkText($(el).html());
                     }
-                    if(validateURL(linkTitle) || !linkTitle || isStopWordTitle(linkTitle)){
-                        if(!linkContentType){
-                            try{
-                                if(!res){
-                                    res = await getPage(linkURL);
-                                }
-                                linkContentType = res.headers.get('content-type');
-                                if(linkContentType.startsWith("text/html")){
-                                    let urlHost = parseURL(linkURL).host;
-                                    if(config.domainsUseApify.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
-                                    {
-                                        linkHTML = await getHTMLApify(linkURL);
-                                    }
-                                    else{
-                                        let buf = Buffer.from(await res.arrayBuffer());
-                                        linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));    
-                                    }
-                                }
-                            }
-                            catch(error){
-                                console.log(error)
-                            }
+                    if(!linkTitle || titleIsURL(linkTitle, linkURL) || titleIsStopWord(linkTitle)){
+                        if(!linkContent){
+                            linkContent = new LinkContent(linkURL, config);
                         }
-                        if(linkContentType.startsWith("text/html")){
-                            linkTitle = await getTitleFromHTML(linkHTML, linkURL);
-                        }
+                        linkTitle = await linkContent.getTitle();
                     }
-                    if(!linkTitle){
-                        linkTitle = linkURL;
-                    }
+                    // if(!linkTitle){
+                    //     linkTitle = linkURL;
+                    // }
                     
-                    // linkContent
-                    let linkContent = "<p>URL: <a href=\"" + linkURL +"\">" + linkURL  + "</a></p><p>source: <a href=\"" + entry.link +"\">" + entry.title + "</a></p>";
+                    // description
+                    let linkDescription = ""
+                    let linkSourceDescription = "<p>URL: <a href=\"" + linkURL +"\">" + linkURL  + "</a></p><p>source: <a href=\"" + entry.link +"\">" + entry.title + "</a></p>";
                     if($('.embedded-post-body', el).length){
-                        linkContent = '<p>' + $('.embedded-post-body', el).first().text() + '</p>' + linkContent;
+                        linkDescription = '<p>' + $('.embedded-post-body', el).first().text() + '</p>';
                     }
                     else if (/twitter.com$/.test(parseURL(linkURL).host.toLocaleLowerCase())){
-                        if(!linkHTML){
-                            try {
-                                if(!res){
-                                    res = await getPage(linkURL);
-                                }
-                                linkContentType = res.headers.get('content-type');
-                                if(linkContentType.startsWith("text/html")){
-                                    let urlHost = parseURL(linkURL).host;
-                                    if(config.domainsUseApify.some((s)=>{return urlHost == s || urlHost.endsWith('.'+s)}))
-                                    {
-                                        linkHTML = await getHTMLApify(linkURL);
-                                    }
-                                    else{
-                                        let buf = Buffer.from(await res.arrayBuffer());
-                                        linkHTML = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));    
-                                    }                                    
-                                }
-                            }
-                            catch(error){}
+                        if(!linkContent){
+                            linkContent = new LinkContent(linkURL, config);
                         }
-                        let tweetContent = await renderTweetFromHTML(linkHTML, linkURL);
-                        linkContent = tweetContent + linkContent;
-                    } else if (linkURL == linkTitle){
-                        if(!linkContentType){
-                            try {
-                                if(!res){
-                                    res = await getPage(linkURL);
-                                }
-                                linkContentType = res.headers.get('content-type');
-                            }
-                            catch(error){}                            
-                        }
-                        if (linkContentType.startsWith("image"))
-                        {
-                            linkContent = '<p><img src="' + linkURL + '"></p>' + linkContent;
-                        }
-                    }
+                        linkDescription = await linkContent.renderContent()
+                    } 
+                    // else if (titleIsURL(linkTitle, linkURL)){
+                    //     if(!linkContent){
+                    //         linkContent = new LinkContent(linkURL, config);
+                    //     }
+                    //     linkDescription = await linkContent.renderContent()
+                    // }
 
-                    let linkEntry = {
-                        url: linkURL, 
-                        title: linkTitle,
-                        description: linkContent,
-                        date: entry.pubDate,
-                        author: entry.author,
-                    };
-                    if( ! links.map((e)=> {return e.url}).includes(linkEntry.url) ){
-                        links.push(linkEntry);
+                    if(linkTitle){
+                        let linkEntry = {
+                            url: linkURL, 
+                            title: linkTitle,
+                            description: linkDescription + linkSourceDescription,
+                            date: entry.pubDate,
+                            author: entry.author,
+                        };
+                        if( ! links.map((e)=> {return e.url}).includes(linkEntry.url) ){
+                            links.push(linkEntry);
+                        }
+                        //console.log(linkDescription);
                     }
-                    //console.log(linkDescription);
                 }
             } 
         }
