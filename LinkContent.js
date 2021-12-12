@@ -141,7 +141,7 @@ class LinkContent{
                 if($('script[type="application/ld+json"]').length){
                     for(let el of $('script[type="application/ld+json"]') ){
                         try{
-                            ld = JSON.parse($(el).html());
+                            let ld = JSON.parse($(el).html());
                             if('@type' in ld){
                                 if(ld['@type'] == "NewsArticle" && 'headline' in ld)
                                 {
@@ -186,7 +186,7 @@ class LinkContent{
                 if($('script[type="application/ld+json"]').length){
                     for(let el of $('script[type="application/ld+json"]') ){
                         try{
-                            ld = JSON.parse($(el).html());
+                            let ld = JSON.parse($(el).html());
                             if('@type' in ld){
                                 if(ld['@type'] == "NewsArticle" && 'description' in ld)
                                 {
@@ -230,7 +230,7 @@ class LinkContent{
                 if($('script[type="application/ld+json"]').length){
                     for(let el of $('script[type="application/ld+json"]') ){
                         try{
-                            ld = JSON.parse($(el).html());
+                            let ld = JSON.parse($(el).html());
                             if('@type' in ld){
                                 if(ld['@type'] == "NewsArticle" && 'image' in ld)
                                 {
