@@ -177,10 +177,10 @@ let loadFeeds = async (feedConfig) => {
     return entries;
 }
 
-let feedConfig = toml.parse(fs.readFileSync('feeds.toml', 'utf8')).feeds;
-let outputFeed = new RSS({title:"Linklog", feed_url:"https://mondain-dev.github.com/linklog/index.xml", site_url:"https://github.com/mondain-dev/linklog"});
+let feedConfig = toml.parse(fs.readFileSync('feeds.toml', 'utf8'));
+let outputFeed = new RSS({title: feedConfig.title, feed_url: feedConfig.url, site_url: feedConfig.site});
 
-loadFeeds(feedConfig).then((items) => {
+loadFeeds(feedConfig.feeds).then((items) => {
     for(let item of items){
         outputFeed.item(item);
     }
