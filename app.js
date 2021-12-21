@@ -42,10 +42,10 @@ let titleIsURL = (title, url) => {
     {
         return true;
     }
-    if(url.replace(/^[a-zA-Z]*:\/\//, '').startsWith(title.replace(/(…$)|(\.\.\.$)/, '').trim())){
+    if(url.replace(/^[a-zA-Z]*:\/\//, '').startsWith(title.replace(/(…$)|(\.+$)/, '').trim())){
         return true;
     }
-    if(url.replace(/^[a-zA-Z]*:\/\/www\./, '').startsWith(title.replace(/(…$)|(\.\.\.$)/, '').trim())){
+    if(url.replace(/^[a-zA-Z]*:\/\/www\./, '').startsWith(title.replace(/(…$)|(\.+$)/, '').trim())){
         return true;
     }
     return false;

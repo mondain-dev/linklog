@@ -30,7 +30,7 @@ entry.includes.target = "title"
 entry.includes.keyword = "revue de presse"
 link.selector = "a"
 link.excludes = ["tocqueville21.com", "twitter.com", "creativecommons.org/licenses", "Wikimedia Commons", "Creative Commons"]
-recent = 30
+recent = 5
 useLinkText = false
 
 [[feeds]]
