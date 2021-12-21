@@ -2,11 +2,15 @@ article
 articles
 best
 click
+comment
+comments
+commented
 dit
 essay
 essays
 example
 examples
+excellent
 gave
 give
 gives
