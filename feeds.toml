@@ -32,6 +32,7 @@ link.selector = "a"
 link.excludes = ["tocqueville21.com", "twitter.com", "creativecommons.org/licenses", "Wikimedia Commons", "Creative Commons"]
 recent = 30
 useLinkText = false
+recent = 5
 
 [[feeds]]
 url = "https://bestoftwitter.substack.com/feed"
