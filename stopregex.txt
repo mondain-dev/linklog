@@ -10,3 +10,6 @@
 ^([a-z]+\s+)?sites?$
 ^([a-z]+\s+)?this$
 ^(another|also)(\s+[a-z]+)?$
+^(for\s)?more(\sfrom+(\s[a-z0-9]+)*)?$
+^(from|in)(\s[a-z]+){0,2}$
+^source$
