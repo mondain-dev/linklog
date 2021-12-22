@@ -150,8 +150,15 @@ let loadFeeds = async (feedConfig) => {
                 let includeEntry = true;
                 if('entry' in f){
                     if('includes' in f.entry){
-                        if(!entry[f.entry.includes.target].toLowerCase().includes(f.entry.includes.keyword.toLowerCase())){
-                            includeEntry = false;
+                        if(Array.isArray(f.entry.includes.target)){
+                            if(f.entry.includes.target.filter((t)=> t in entry).every( (t) => ! entry[t].toLowerCase().includes(f.entry.includes.keyword.toLowerCase()))){
+                                includeEntry = false;
+                            }
+                        }
+                        else{
+                            if(!entry[f.entry.includes.target].toLowerCase().includes(f.entry.includes.keyword.toLowerCase())){
+                                includeEntry = false;
+                            }    
                         }
                     }
                 }
