@@ -96,7 +96,9 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                             linkContent = new LinkContent(linkURL, config);
                         }
                         linkTitle = await linkContent.getTitle();
-                        linkURL = linkContent.url;
+                        if (parseURL(linkURL).host.toLocaleLowerCase() != parseURL(linkContent.url).host.toLocaleLowerCase()){
+                            linkURL = linkContent.url;
+                        }
                     }
                     // if(!linkTitle){
                     //     linkTitle = linkURL;
