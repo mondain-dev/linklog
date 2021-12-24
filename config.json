@@ -1,12 +1,12 @@
 {
-    "endpointApify": "https://api.apify.com/v2/acts/mtrunkat~url-list-download-html/run-sync-get-dataset-items",
+    "endpointScraper": "http://api.scraperapi.com",
     "domainsCustomUserAgent": [
         "bloomberg.com", 
         "ncbi.nlm.nih.gov", 
         "jstor.org", 
         "washingtonpost.com"
     ],
-    "domainsUseApify": [
+    "domainsUseScraper": [
         "bloomberg.com",
         "tandfonline.com",
         "doi.org"
