@@ -94,7 +94,6 @@ class LinkContent{
         let endpoint = new URL(this.config.endpointScraper); 
         endpoint.searchParams.append("api_key", process.env.SCRAPER_API_KEY);
         endpoint.searchParams.append("url", this.url);
-        console.log(endpoint.href)
         let res = await fetch(endpoint.href);
         let buf = Buffer.from(await res.arrayBuffer());
         let html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
