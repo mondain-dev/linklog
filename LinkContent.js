@@ -52,7 +52,7 @@ class LinkContent{
         try{
             this.response = await fetch(this.url, {headers: this.getHeadersForURL(), signal: controller.signal});
             this.contentType = this.response.headers.get('content-type');
-            if(this.config.domainsUseApify.every((s)=>{return parseURL(this.url).host != s && !parseURL(this.url).host.endsWith('.'+s)})){
+            if(this.config.domainsUseScraper.every((s)=>{return parseURL(this.url).host != s && !parseURL(this.url).host.endsWith('.'+s)})){
                 this.url = this.response.url;
             }
             this.urlParsed = parseURL(this.url);
@@ -65,45 +65,57 @@ class LinkContent{
         }
     }
 
-    async getHTMLApify(){
-        let endpoint = new URL(this.config.endpointApify); 
-        endpoint.searchParams.append("token", process.env.APIFY_API_KEY);
-        let input    = {
-            "requestListSources": [
-                {
-                    "url": this.url
-                }
-            ],
-            "proxyConfiguration": {
-                "useApifyProxy": true,
-                "apifyProxyCountry": "US"
-            },
-            "useChrome": false
-        }
-        let res = await fetch(endpoint.href, {
-            method: 'post',
-            body: JSON.stringify(input),
-            headers: {'Content-Type': 'application/json'}
-        });
+    // async getHTMLApify(){
+    //     let endpoint = new URL(this.config.endpointApify); 
+    //     endpoint.searchParams.append("token", process.env.APIFY_API_KEY);
+    //     let input    = {
+    //         "requestListSources": [
+    //             {
+    //                 "url": this.url
+    //             }
+    //         ],
+    //         "proxyConfiguration": {
+    //             "useApifyProxy": true,
+    //             "apifyProxyCountry": "US"
+    //         },
+    //         "useChrome": false
+    //     }
+    //     let res = await fetch(endpoint.href, {
+    //         method: 'post',
+    //         body: JSON.stringify(input),
+    //         headers: {'Content-Type': 'application/json'}
+    //     });
+    //     let buf = Buffer.from(await res.arrayBuffer());
+    //     let data = JSON.parse(whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'})));
+    //     return data[0].fullHtml;
+    // }
+
+    async getHTMLScraper(){
+        let endpoint = new URL(this.config.endpointAPI); 
+        endpoint.searchParams.append("api_key", process.env.SCRAPER_API_KEY);
+        endpoint.searchParams.append("url", this.url);
+        console.log(endpoint.href)
+        let res = await fetch(endpoint.href);
         let buf = Buffer.from(await res.arrayBuffer());
-        let data = JSON.parse(whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'})));
-        return data[0].fullHtml;
+        let html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
+        // console.log(html);
+        return html;
     }
 
     async getHTML(){
         if(this.html == null)
         {
-            if(this.config.domainsUseApify.some((s)=>{return this.urlParsed.host == s || this.urlParsed.host.endsWith('.'+s)}))
+            if(this.config.domainsUseScraper.some((s)=>{return this.urlParsed.host == s || this.urlParsed.host.endsWith('.'+s)}))
             {
-                this.html = await this.getHTMLApify();
+                this.html = await this.getHTMLScraper();
             }
             else{
                 if(!this.response){
                     await this.fetchUrl();
                 }
-                if(this.config.domainsUseApify.some((s)=>{return this.urlParsed.host == s || this.urlParsed.host.endsWith('.'+s)}))
+                if(this.config.domainsUseScraper.some((s)=>{return this.urlParsed.host == s || this.urlParsed.host.endsWith('.'+s)}))
                 {
-                    this.html = await this.getHTMLApify();
+                    this.html = await this.getHTMLScraper();
                 }
                 else if(this.contentType.startsWith('text/html')){
                     let buf = Buffer.from(await this.response.arrayBuffer());
