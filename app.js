@@ -1,5 +1,4 @@
 var fs = require('fs');
-var URL = require('whatwg-url').URL
 var parseURL = require("whatwg-url").parseURL;
 
 var toml = require('@iarna/toml');
