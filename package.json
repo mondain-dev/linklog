@@ -21,6 +21,7 @@
     "rss": "^1.2.2",
     "rss-parser": "^3.12.0",
     "stopword": "^1.0.11",
+    "valid-url": "^1.0.9",
     "whatwg-encoding": "^2.0.0",
     "whatwg-url": "^11.0.0"
   }

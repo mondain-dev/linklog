@@ -8,6 +8,7 @@ var RSSParser = require('rss-parser');
 let rssParser = new RSSParser();
 var RSS = require('rss');
 var sw = require('stopword');
+var validUrl = require('valid-url');
 
 var config = require('./config.json')
 var LinkContent = require('./LinkContent.js')
@@ -28,17 +29,8 @@ function titleIsStopWord(title){
     return result;
 }
 
-function validateURL(string) {
-    try {
-      let url = new URL(string);
-    } catch (_) {
-      return false;  
-    }
-    return true;
-}
-
 let titleIsURL = (title, url) => {
-    if(validateURL(title))
+    if(validUrl.isUri(title))
     {
         return true;
     }
@@ -82,7 +74,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
         for (let el of $(cssSelector)){
             if (excludes.every((t)=>{return !$(el).attr('href').includes(t) && !$(el).text().includes(t) })){
                 let linkURL = $(el).attr('href');
-                if (validateURL(linkURL))
+                if (validUrl.isUri(linkURL))
                 {
                     let linkContent;
                     // linkTitle
