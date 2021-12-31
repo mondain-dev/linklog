@@ -127,6 +127,9 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                         }
                         //console.log(linkDescription);
                     }
+                    else{
+                        console.log("Not added: " + linkURL);
+                    }
                 }
             } 
         }
