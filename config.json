@@ -9,6 +9,7 @@
     "domainsUseScraper": [
         "bloomberg.com",
         "tandfonline.com",
-        "doi.org"
+        "doi.org",
+        "quantamagazine.org"
     ]
 }
