@@ -52,7 +52,7 @@ class LinkContent{
         try{
             this.response = await fetch(this.url, {headers: this.getHeadersForURL(), signal: controller.signal});
             this.contentType = this.response.headers.get('content-type');
-            if(this.config.domainsUseScraper.every((s)=>{return parseURL(this.url).host != s && !parseURL(this.url).host.endsWith('.'+s)})){
+            if(this.config.domainsUseScraper.every((s)=>{return this.urlParsed.host != s && !this.urlParsed.host.endsWith('.'+s)})){
                 this.url = this.response.url;
             }
             this.urlParsed = parseURL(this.url);
@@ -140,7 +140,7 @@ class LinkContent{
         if(!this.response){
             await this.fetchUrl();
         }
-        if(this.contentType.startsWith('text/html')){
+        if(this.contentType.startsWith('text/html') || this.config.domainsUseScraper.some((s)=>{return this.urlParsed.host == s || this.urlParsed.host.endsWith('.'+s)})){
             if(this.title == null)
             {
                 if(this.html == null)
