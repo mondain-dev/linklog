@@ -64,9 +64,11 @@ class LinkContent{
         finally{
             clearTimeout(timeout);
         }
-        if('status' in this.response){
-            if(this.response.status >= 200 && this.response.status < 300){
-                this.statusOk = true;
+        if(this.response){
+            if('status' in this.response){
+                if(this.response.status >= 200 && this.response.status < 300){
+                    this.statusOk = true;
+                }    
             }    
         }
     }
