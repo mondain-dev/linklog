@@ -27,6 +27,7 @@ class LinkContent{
       this.urlParsed = parseURL(url);
       
       this.response = null;
+      this.statusOk   = false;
       this.contentType = ''; 
       this.html = null;
       this.metadata = null;
@@ -52,7 +53,7 @@ class LinkContent{
         try{
             this.response = await fetch(this.url, {headers: this.getHeadersForURL(), signal: controller.signal});
             this.contentType = this.response.headers.get('content-type');
-            if(this.config.domainsUseScraper.every((s)=>{return this.urlParsed.host != s && !this.urlParsed.host.endsWith('.'+s)})){
+            if(this.config.domainsUseScraper.every((s)=>{return parseURL(this.url).host != s && !parseURL(this.url).host.endsWith('.'+s)})){
                 this.url = this.response.url;
             }
             this.urlParsed = parseURL(this.url);
@@ -63,37 +64,16 @@ class LinkContent{
         finally{
             clearTimeout(timeout);
         }
+        if(this.response.status >= 200 && this.response.status < 300){
+            this.statusOk = true;
+        }
     }
 
-    // async getHTMLApify(){
-    //     let endpoint = new URL(this.config.endpointApify); 
-    //     endpoint.searchParams.append("token", process.env.APIFY_API_KEY);
-    //     let input    = {
-    //         "requestListSources": [
-    //             {
-    //                 "url": this.url
-    //             }
-    //         ],
-    //         "proxyConfiguration": {
-    //             "useApifyProxy": true,
-    //             "apifyProxyCountry": "US"
-    //         },
-    //         "useChrome": false
-    //     }
-    //     let res = await fetch(endpoint.href, {
-    //         method: 'post',
-    //         body: JSON.stringify(input),
-    //         headers: {'Content-Type': 'application/json'}
-    //     });
-    //     let buf = Buffer.from(await res.arrayBuffer());
-    //     let data = JSON.parse(whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'})));
-    //     return data[0].fullHtml;
-    // }
-
     async getHTMLScraper(){
-        let endpoint = new URL(this.config.endpointScraper); 
+        let endpoint = new URL(this.config.endpointAPI); 
         endpoint.searchParams.append("api_key", process.env.SCRAPER_API_KEY);
         endpoint.searchParams.append("url", this.url);
+        console.log(endpoint.href)
         let res = await fetch(endpoint.href);
         let buf = Buffer.from(await res.arrayBuffer());
         let html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
@@ -112,16 +92,18 @@ class LinkContent{
                 if(!this.response){
                     await this.fetchUrl();
                 }
-                if(this.config.domainsUseScraper.some((s)=>{return this.urlParsed.host == s || this.urlParsed.host.endsWith('.'+s)}))
-                {
-                    this.html = await this.getHTMLScraper();
-                }
-                else if(this.contentType.startsWith('text/html')){
-                    let buf = Buffer.from(await this.response.arrayBuffer());
-                    this.html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
-                }
-                else{
-                    this.html = '';
+                if(this.statusOk){
+                    if(this.config.domainsUseScraper.some((s)=>{return this.urlParsed.host == s || this.urlParsed.host.endsWith('.'+s)}))
+                    {
+                        this.html = await this.getHTMLScraper();
+                    }
+                    else if(this.contentType.startsWith('text/html')){
+                        let buf = Buffer.from(await this.response.arrayBuffer());
+                        this.html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
+                    }
+                    else{
+                        this.html = '';
+                    }    
                 }
             }
         }
@@ -140,38 +122,38 @@ class LinkContent{
         if(!this.response){
             await this.fetchUrl();
         }
-        if(this.contentType.startsWith('text/html') || this.config.domainsUseScraper.some((s)=>{return this.urlParsed.host == s || this.urlParsed.host.endsWith('.'+s)})){
-            if(this.title == null)
-            {
-                if(this.html == null)
-                {
-                    await this.getHTML();
-                }
-                // ld+json
-                let $ = cheerio.load(this.html);
-                if($('script[type="application/ld+json"]').length){
-                    for(let el of $('script[type="application/ld+json"]') ){
-                        try{
-                            let ld = JSON.parse($(el).html());
-                            if('@type' in ld){
-                                if(ld['@type'] == "NewsArticle" && 'headline' in ld)
-                                {
-                                    this.title = ld['headline'];
-                                }
-                            }    
-                        }
-                        catch(error){
+        if(this.statusOk){
+            if(this.contentType.startsWith('text/html') || this.config.domainsUseScraper.some((s)=>{return parseURL(this.url).host == s || parseURL(this.url).host.endsWith('.'+s)})){
+                if(this.title == null){
+                    if(this.html == null){
+                        await this.getHTML();
+                    }
+                    // ld+json
+                    let $ = cheerio.load(this.html);
+                    if($('script[type="application/ld+json"]').length){
+                        for(let el of $('script[type="application/ld+json"]') ){
+                            try{
+                                let ld = JSON.parse($(el).html());
+                                if('@type' in ld){
+                                    if(ld['@type'] == "NewsArticle" && 'headline' in ld)
+                                    {
+                                        this.title = ld['headline'];
+                                    }
+                                }    
+                            }
+                            catch(error){
+                            }
                         }
                     }
                 }
-            }
-            if(this.title == null)
-            {
-                if (!this.metadata)
+                if(this.title == null)
                 {
-                    this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
+                    if (!this.metadata)
+                    {
+                        this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
+                    }
+                    this.title = this.metadata.title;
                 }
-                this.title = this.metadata.title;
             }
         }
         if(this.title == null)
@@ -185,38 +167,40 @@ class LinkContent{
         if(!this.response){
             await this.fetchUrl();
         }
-        if(this.contentType.startsWith('text/html')){
-            if(this.description == null)
-            {
-                if(this.html == null)
+        if(this.statusOk){
+            if(this.contentType.startsWith('text/html') || this.config.domainsUseScraper.some((s)=>{return parseURL(this.url).host == s || parseURL(this.url).host.endsWith('.'+s)})){
+                if(this.description == null)
                 {
-                    await this.getHTML();
-                }
-                // ld+json
-                let $ = cheerio.load(this.html);
-                if($('script[type="application/ld+json"]').length){
-                    for(let el of $('script[type="application/ld+json"]') ){
-                        try{
-                            let ld = JSON.parse($(el).html());
-                            if('@type' in ld){
-                                if(ld['@type'] == "NewsArticle" && 'description' in ld)
-                                {
-                                    this.description = ld['description'];
-                                }
-                            }    
-                        }
-                        catch(error){
+                    if(this.html == null)
+                    {
+                        await this.getHTML();
+                    }
+                    // ld+json
+                    let $ = cheerio.load(this.html);
+                    if($('script[type="application/ld+json"]').length){
+                        for(let el of $('script[type="application/ld+json"]') ){
+                            try{
+                                let ld = JSON.parse($(el).html());
+                                if('@type' in ld){
+                                    if(ld['@type'] == "NewsArticle" && 'description' in ld)
+                                    {
+                                        this.description = ld['description'];
+                                    }
+                                }    
+                            }
+                            catch(error){
+                            }
                         }
                     }
                 }
-            }
-            if(this.description == null)
-            {
-                if (!this.metadata)
+                if(this.description == null)
                 {
-                    this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
+                    if (!this.metadata)
+                    {
+                        this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
+                    }
+                    this.description = this.metadata.description;
                 }
-                this.description = this.metadata.description;
             }
         }
         if(this.description == null){
@@ -229,44 +213,45 @@ class LinkContent{
         if(!this.response){
             await this.fetchUrl();
         }
-        if(this.contentType.startsWith('text/html')){
-            if(this.image == null)
-            {
-                if(this.html == null)
+        if(this.statusOk){
+            if(this.contentType.startsWith('text/html') || this.config.domainsUseScraper.some((s)=>{return parseURL(this.url).host == s || parseURL(this.url).host.endsWith('.'+s)})){
+                if(this.image == null)
                 {
-                    await this.getHTML();
-                }
-                // ld+json
-                let $ = cheerio.load(this.html);
-                if($('script[type="application/ld+json"]').length){
-                    for(let el of $('script[type="application/ld+json"]') ){
-                        try{
-                            let ld = JSON.parse($(el).html());
-                            if('@type' in ld){
-                                if(ld['@type'] == "NewsArticle" && 'image' in ld)
-                                {
-                                    this.image = ld['image'].url;
-                                }
-                            }    
-                        }
-                        catch(error){
+                    if(this.html == null)
+                    {
+                        await this.getHTML();
+                    }
+                    // ld+json
+                    let $ = cheerio.load(this.html);
+                    if($('script[type="application/ld+json"]').length){
+                        for(let el of $('script[type="application/ld+json"]') ){
+                            try{
+                                let ld = JSON.parse($(el).html());
+                                if('@type' in ld){
+                                    if(ld['@type'] == "NewsArticle" && 'image' in ld)
+                                    {
+                                        this.image = ld['image'].url;
+                                    }
+                                }    
+                            }
+                            catch(error){
+                            }
                         }
                     }
                 }
-            }
-            if(this.image == null)
-            {
-                if (!this.metadata)
+                if(this.image == null)
                 {
-                    this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
+                    if (!this.metadata)
+                    {
+                        this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
+                    }
+                    this.image = this.metadata.image;
                 }
-                this.image = this.metadata.image;
+            }
+            else if (this.contentType.startsWith('image')){
+                this.image = this.url;
             }
         }
-        else if (this.contentType.startsWith('image')){
-            this.image = this.url;
-        }
-
         if(this.image == null)
         {
             this.image == "";
