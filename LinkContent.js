@@ -64,8 +64,10 @@ class LinkContent{
         finally{
             clearTimeout(timeout);
         }
-        if(this.response.status >= 200 && this.response.status < 300){
-            this.statusOk = true;
+        if('status' in this.response){
+            if(this.response.status >= 200 && this.response.status < 300){
+                this.statusOk = true;
+            }    
         }
     }
 
@@ -73,11 +75,9 @@ class LinkContent{
         let endpoint = new URL(this.config.endpointScraper); 
         endpoint.searchParams.append("api_key", process.env.SCRAPER_API_KEY);
         endpoint.searchParams.append("url", this.url);
-        console.log(endpoint.href)
         let res = await fetch(endpoint.href);
         let buf = Buffer.from(await res.arrayBuffer());
         let html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
-        // console.log(html);
         return html;
     }
 
@@ -122,38 +122,36 @@ class LinkContent{
         if(!this.response){
             await this.fetchUrl();
         }
-        if(this.statusOk){
-            if(this.contentType.startsWith('text/html') || this.config.domainsUseScraper.some((s)=>{return parseURL(this.url).host == s || parseURL(this.url).host.endsWith('.'+s)})){
-                if(this.title == null){
-                    if(this.html == null){
-                        await this.getHTML();
-                    }
-                    // ld+json
-                    let $ = cheerio.load(this.html);
-                    if($('script[type="application/ld+json"]').length){
-                        for(let el of $('script[type="application/ld+json"]') ){
-                            try{
-                                let ld = JSON.parse($(el).html());
-                                if('@type' in ld){
-                                    if(ld['@type'] == "NewsArticle" && 'headline' in ld)
-                                    {
-                                        this.title = ld['headline'];
-                                    }
-                                }    
-                            }
-                            catch(error){
-                            }
+        if((this.statusOk && this.contentType.startsWith('text/html')) || this.config.domainsUseScraper.some((s)=>{return parseURL(this.url).host == s || parseURL(this.url).host.endsWith('.'+s)})){
+            if(this.title == null){
+                if(this.html == null){
+                    await this.getHTML();
+                }
+                // ld+json
+                let $ = cheerio.load(this.html);
+                if($('script[type="application/ld+json"]').length){
+                    for(let el of $('script[type="application/ld+json"]') ){
+                        try{
+                            let ld = JSON.parse($(el).html());
+                            if('@type' in ld){
+                                if(ld['@type'] == "NewsArticle" && 'headline' in ld)
+                                {
+                                    this.title = ld['headline'];
+                                }
+                            }    
+                        }
+                        catch(error){
                         }
                     }
                 }
-                if(this.title == null)
+            }
+            if(this.title == null)
+            {
+                if (!this.metadata)
                 {
-                    if (!this.metadata)
-                    {
-                        this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
-                    }
-                    this.title = this.metadata.title;
+                    this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
                 }
+                this.title = this.metadata.title;
             }
         }
         if(this.title == null)
@@ -167,40 +165,38 @@ class LinkContent{
         if(!this.response){
             await this.fetchUrl();
         }
-        if(this.statusOk){
-            if(this.contentType.startsWith('text/html') || this.config.domainsUseScraper.some((s)=>{return parseURL(this.url).host == s || parseURL(this.url).host.endsWith('.'+s)})){
-                if(this.description == null)
+        if((this.statusOk && this.contentType.startsWith('text/html')) || this.config.domainsUseScraper.some((s)=>{return parseURL(this.url).host == s || parseURL(this.url).host.endsWith('.'+s)})){                
+            if(this.description == null)
+            {
+                if(this.html == null)
                 {
-                    if(this.html == null)
-                    {
-                        await this.getHTML();
-                    }
-                    // ld+json
-                    let $ = cheerio.load(this.html);
-                    if($('script[type="application/ld+json"]').length){
-                        for(let el of $('script[type="application/ld+json"]') ){
-                            try{
-                                let ld = JSON.parse($(el).html());
-                                if('@type' in ld){
-                                    if(ld['@type'] == "NewsArticle" && 'description' in ld)
-                                    {
-                                        this.description = ld['description'];
-                                    }
-                                }    
-                            }
-                            catch(error){
-                            }
+                    await this.getHTML();
+                }
+                // ld+json
+                let $ = cheerio.load(this.html);
+                if($('script[type="application/ld+json"]').length){
+                    for(let el of $('script[type="application/ld+json"]') ){
+                        try{
+                            let ld = JSON.parse($(el).html());
+                            if('@type' in ld){
+                                if(ld['@type'] == "NewsArticle" && 'description' in ld)
+                                {
+                                    this.description = ld['description'];
+                                }
+                            }    
+                        }
+                        catch(error){
                         }
                     }
                 }
-                if(this.description == null)
+            }
+            if(this.description == null)
+            {
+                if (!this.metadata)
                 {
-                    if (!this.metadata)
-                    {
-                        this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
-                    }
-                    this.description = this.metadata.description;
+                    this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
                 }
+                this.description = this.metadata.description;
             }
         }
         if(this.description == null){
@@ -213,44 +209,42 @@ class LinkContent{
         if(!this.response){
             await this.fetchUrl();
         }
-        if(this.statusOk){
-            if(this.contentType.startsWith('text/html') || this.config.domainsUseScraper.some((s)=>{return parseURL(this.url).host == s || parseURL(this.url).host.endsWith('.'+s)})){
-                if(this.image == null)
+        if((this.statusOk && this.contentType.startsWith('text/html')) || this.config.domainsUseScraper.some((s)=>{return parseURL(this.url).host == s || parseURL(this.url).host.endsWith('.'+s)})){                
+            if(this.image == null)
+            {
+                if(this.html == null)
                 {
-                    if(this.html == null)
-                    {
-                        await this.getHTML();
-                    }
-                    // ld+json
-                    let $ = cheerio.load(this.html);
-                    if($('script[type="application/ld+json"]').length){
-                        for(let el of $('script[type="application/ld+json"]') ){
-                            try{
-                                let ld = JSON.parse($(el).html());
-                                if('@type' in ld){
-                                    if(ld['@type'] == "NewsArticle" && 'image' in ld)
-                                    {
-                                        this.image = ld['image'].url;
-                                    }
-                                }    
-                            }
-                            catch(error){
-                            }
+                    await this.getHTML();
+                }
+                // ld+json
+                let $ = cheerio.load(this.html);
+                if($('script[type="application/ld+json"]').length){
+                    for(let el of $('script[type="application/ld+json"]') ){
+                        try{
+                            let ld = JSON.parse($(el).html());
+                            if('@type' in ld){
+                                if(ld['@type'] == "NewsArticle" && 'image' in ld)
+                                {
+                                    this.image = ld['image'].url;
+                                }
+                            }    
+                        }
+                        catch(error){
                         }
                     }
                 }
-                if(this.image == null)
+            }
+            if(this.image == null)
+            {
+                if (!this.metadata)
                 {
-                    if (!this.metadata)
-                    {
-                        this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
-                    }
-                    this.image = this.metadata.image;
+                    this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
                 }
+                this.image = this.metadata.image;
             }
-            else if (this.contentType.startsWith('image')){
-                this.image = this.url;
-            }
+        }
+        else if (this.statusOk && this.contentType.startsWith('image')){
+            this.image = this.url;
         }
         if(this.image == null)
         {
