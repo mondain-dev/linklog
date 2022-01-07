@@ -33,10 +33,16 @@ let titleIsURL = (title, url) => {
     {
         return true;
     }
-    if(url.replace(/^[a-zA-Z]*:\/\//, '').startsWith(title.replace(/(…$)|(\.+$)/, '').trim())){
+    if(title.replace(/\s/g, '') == url){
         return true;
     }
-    if(url.replace(/^[a-zA-Z]*:\/\/www\./, '').startsWith(title.replace(/(…$)|(\.+$)/, '').trim())){
+    if(url.startsWith(title.replace(/\s/g, '').replace(/(…$)|(\.+$)/, ''))){
+        return true;
+    }
+    if(url.replace(/^[a-zA-Z]*:\/\//, '').startsWith(title.replace(/\s/g, '').replace(/(…$)|(\.+$)/, ''))){
+        return true;
+    }
+    if(url.replace(/^[a-zA-Z]*:\/\/www\./, '').startsWith(title.replace(/\s/g, '').replace(/(…$)|(\.+$)/, ''))){
         return true;
     }
     return false;
