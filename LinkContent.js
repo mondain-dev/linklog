@@ -77,9 +77,13 @@ class LinkContent{
         let endpoint = new URL(this.config.endpointScraper); 
         endpoint.searchParams.append("api_key", process.env.SCRAPER_API_KEY);
         endpoint.searchParams.append("url", this.url);
-        let res = await fetch(endpoint.href);
-        let buf = Buffer.from(await res.arrayBuffer());
-        let html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
+        let html = ''
+        try{
+            let res = await fetch(endpoint.href);
+            let buf = Buffer.from(await res.arrayBuffer());
+            html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
+        }
+        catch(e){}
         return html;
     }
 
@@ -100,8 +104,11 @@ class LinkContent{
                         this.html = await this.getHTMLScraper();
                     }
                     else if(this.contentType.startsWith('text/html')){
-                        let buf = Buffer.from(await this.response.arrayBuffer());
-                        this.html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
+                        try{
+                            let buf = Buffer.from(await this.response.arrayBuffer());
+                            this.html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
+                        }
+                        catch(e){}
                     }
                     else{
                         this.html = '';
