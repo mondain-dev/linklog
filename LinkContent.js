@@ -55,8 +55,8 @@ class LinkContent{
             this.contentType = this.response.headers.get('content-type');
             if(this.config.domainsUseScraper.every((s)=>{return parseURL(this.url).host != s && !parseURL(this.url).host.endsWith('.'+s)})){
                 this.url = this.response.url;
+                this.urlParsed = parseURL(this.url);
             }
-            this.urlParsed = parseURL(this.url);
         }
         catch(error){
             console.log('fetch(' + this.url + ') failed.');
