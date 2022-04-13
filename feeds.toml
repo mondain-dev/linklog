@@ -7,7 +7,7 @@ url = "https://quillette.com/rss/"
 entry.includes.target = "title"
 entry.includes.keyword = "roundup"
 link.selector = "a"
-link.excludes = ["quillette.com", "twitter.com"]
+link.excludes = ["quillette.com", "twitter.com", "podcasts.apple.com"]
 
 [[feeds]]
 url = "http://feeds.feedburner.com/marginalrevolution"
