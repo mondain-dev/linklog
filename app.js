@@ -55,7 +55,7 @@ let extractLinkText = (strHTML) => {
     }
 
     texts = strHTML.trim().replace(/(<([^>]+)>)/ig, '\n').split('\n').map(e => e.trim()).filter(Boolean);
-    if(!texts.length){
+    if(texts.length){
         return texts[0].trim();
     }
     else{
