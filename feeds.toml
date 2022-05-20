@@ -39,3 +39,11 @@ url = "https://bestoftwitter.substack.com/feed"
 link.selector = "a"
 link.excludes = ["bestoftwitter.substack.com", "cdn.substack.com"]
 recent = 3
+
+[[feeds]]
+url = "https://chrisblattman.com/feed/"
+entry.includes.target = "title"
+entry.includes.keyword = "links i liked"
+link.selector = "a"
+link.excludes = ["chrisblattman.com"]
+recent=3
