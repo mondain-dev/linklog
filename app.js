@@ -53,6 +53,7 @@ let extractEmbeddedTitle = (strHTML) => {
     if($('.embedded-post-title').length){
         return $('.embedded-post-title').first().text().trim();
     }
+    return '';
 }
 
 let extractLinkText = (strHTML) => {
