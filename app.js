@@ -48,12 +48,14 @@ let titleIsURL = (title, url) => {
     return false;
 }
 
-let extractLinkText = (strHTML) => {
+let extractEmbeddedTitle = (strHTML) => {
     const $ = cheerio.load(strHTML);
     if($('.embedded-post-title').length){
         return $('.embedded-post-title').first().text().trim();
     }
+}
 
+let extractLinkText = (strHTML) => {
     texts = strHTML.trim().replace(/(<([^>]+)>)/ig, '\n').split('\n').map(e => e.trim()).filter(Boolean);
     if(texts.length){
         return texts[0].trim();
@@ -83,8 +85,8 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                 {
                     let linkContent;
                     // linkTitle
-                    let linkTitle = '';
-                    if(useLinkText)
+                    let linkTitle = extractEmbeddedTitle($(el).html());
+                    if(!linkTitle && useLinkText)
                     {
                         linkTitle = extractLinkText($(el).html());
                     }
