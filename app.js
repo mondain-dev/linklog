@@ -184,6 +184,9 @@ let loadFeeds = async (feedConfig) => {
                     entries.push(...extractedLinks);
                 }
             }
+        }).catch((error) => {
+            console.error("feed: " + f.url);
+            console.error("The Promise is rejected!", error);
         });
     }
     // entries = await Promise.all(entries);
