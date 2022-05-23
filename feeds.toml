@@ -37,7 +37,7 @@ useLinkText = false
 [[feeds]]
 url = "https://bestoftwitter.substack.com/feed"
 link.selector = "a"
-link.excludes = ["bestoftwitter.substack.com", "cdn.substack.com"]
+link.excludes = ["bestoftwitter.substack.com", "cdn.substack.com", "substackcdn.com"]
 recent = 3
 
 [[feeds]]
