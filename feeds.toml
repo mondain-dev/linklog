@@ -3,13 +3,6 @@ url = "https://mondain-dev.github.io/linklog/index.xml"
 site = "https://github.com/mondain-dev/linklog"
 
 [[feeds]]
-url = "https://quillette.com/rss/"
-entry.includes.target = "title"
-entry.includes.keyword = "roundup"
-link.selector = "a"
-link.excludes = ["quillette.com", "twitter.com", "podcasts.apple.com"]
-
-[[feeds]]
 url = "http://feeds.feedburner.com/marginalrevolution"
 entry.includes.target = "title"
 entry.includes.keyword = "assorted link"
