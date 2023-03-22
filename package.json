@@ -11,12 +11,12 @@
   "dependencies": {
     "@iarna/toml": "^2.2.5",
     "cheerio": "^1.0.0-rc.10",
+    "follow-redirects": "^1.15.2",
     "html-encoding-sniffer": "^3.0.0",
     "metascraper": "^5.25.2",
     "metascraper-description": "^5.25.2",
     "metascraper-image": "^5.25.2",
     "metascraper-title": "^5.25.2",
-    "node-abort-controller": "^3.0.1",
     "node-fetch": "^3.1.0",
     "rss": "^1.2.2",
     "rss-parser": "^3.12.0",

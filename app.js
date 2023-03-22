@@ -96,9 +96,9 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                             linkContent = new LinkContent(linkURL, config);
                         }
                         linkTitle = await linkContent.getTitle();
-                        if (parseURL(linkURL).host.toLocaleLowerCase() != parseURL(linkContent.url).host.toLocaleLowerCase()){
-                            linkURL = linkContent.url;
-                        }
+                        // if (parseURL(linkURL).host.toLocaleLowerCase() != parseURL(linkContent.url).host.toLocaleLowerCase()){
+                        //    linkURL = linkContent.url;
+                        // }
                     }
                     // if(!linkTitle){
                     //     linkTitle = linkURL;
@@ -134,7 +134,6 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                         if( ! links.map((e)=> {return e.url}).includes(linkEntry.url) ){
                             links.push(linkEntry);
                         }
-                        //console.log(linkDescription);
                     }
                     else{
                         console.log("Not added: " + linkURL);
@@ -184,7 +183,9 @@ let loadFeeds = async (feedConfig) => {
                     entries.push(...extractedLinks);
                 }
             }
-        }).catch((error) => {
+        })
+        .catch((error) => {
+            console.error(error)
             console.error("feed: " + f.url);
             console.error("The Promise is rejected!", error);
         });
