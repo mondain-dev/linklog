@@ -10,19 +10,19 @@
   "license": "ISC",
   "dependencies": {
     "@iarna/toml": "^2.2.5",
-    "cheerio": "^1.0.0-rc.10",
+    "cheerio": "^1.0.0-rc.12",
     "follow-redirects": "^1.15.2",
     "html-encoding-sniffer": "^3.0.0",
-    "metascraper": "^5.25.2",
-    "metascraper-description": "^5.25.2",
-    "metascraper-image": "^5.25.2",
-    "metascraper-title": "^5.25.2",
+    "metascraper": "^5.34.0",
+    "metascraper-description": "^5.33.7",
+    "metascraper-image": "^5.33.7",
+    "metascraper-title": "^5.33.7",
     "node-fetch": "^3.1.0",
     "rss": "^1.2.2",
     "rss-parser": "^3.12.0",
-    "stopword": "^1.0.11",
+    "stopword": "^2.0.7",
     "valid-url": "^1.0.9",
     "whatwg-encoding": "^2.0.0",
-    "whatwg-url": "^11.0.0"
+    "whatwg-url": "^12.0.1"
   }
 }

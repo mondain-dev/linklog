@@ -96,13 +96,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                             linkContent = new LinkContent(linkURL, config);
                         }
                         linkTitle = await linkContent.getTitle();
-                        // if (parseURL(linkURL).host.toLocaleLowerCase() != parseURL(linkContent.url).host.toLocaleLowerCase()){
-                        //    linkURL = linkContent.url;
-                        // }
                     }
-                    // if(!linkTitle){
-                    //     linkTitle = linkURL;
-                    // }
                     
                     // description
                     let linkDescription = ""
@@ -116,12 +110,6 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
                         }
                         linkDescription = await linkContent.renderContent()
                     } 
-                    // else if (titleIsURL(linkTitle, linkURL)){
-                    //     if(!linkContent){
-                    //         linkContent = new LinkContent(linkURL, config);
-                    //     }
-                    //     linkDescription = await linkContent.renderContent()
-                    // }
 
                     if(linkTitle){
                         let linkEntry = {

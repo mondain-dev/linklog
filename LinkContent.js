@@ -2,9 +2,6 @@ var URL = require('whatwg-url').URL
 var parseURL = require("whatwg-url").parseURL;
 
 var fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-// var AbortController = require("node-abort-controller").AbortController;
-
-var { http, https } = require('follow-redirects');
 
 var htmlEncodingSniffer = require("html-encoding-sniffer");
 var whatwgEncoding = require("whatwg-encoding");
@@ -21,27 +18,21 @@ const userAgent   = pjson.name + "/" + pjson.version;
 const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
 
-function followUrl(url) {
-    const get = url.startsWith('https') ? https.get : http.get
-    
+function followUrl(url, fetchOptions) {
     return new Promise((resolve, reject) => {
-        const request = get(url, (res) => {
-          if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-            followUrl(res.headers.location)
-              .then((finalUrlAndRes) => resolve(finalUrlAndRes))
-              .catch((err) => reject(err));
-          } else {
-            resolve({ finalUrl: url, finalRes: res });
-          }
-        }).on('error', (err) => {
-          reject(err);
-        });
-        
-        setTimeout(() => {
-            request.abort();
-            reject(new Error(`Timeout for ${url}`));
-          }, 5000);
-        });
+        let finalUrl = url;
+        fetch(url, fetchOptions)
+          .then((res) => {
+            if (res.status >= 300 && res.status < 400 && res.headers.has('location')) {
+              finalUrl = res.headers.get('location');
+              return followUrl(finalUrl, fetchOptions);
+            } else {
+              resolve({ finalUrl, finalRes: res });
+            }
+          })
+          .then((finalUrlAndRes) => resolve(finalUrlAndRes))
+          .catch((err) => reject(err));
+      });
 }
 
 class LinkContent{
@@ -83,7 +74,7 @@ class LinkContent{
     async checkUrl(){
         try{
             if(!this.needScraper){
-                let {finalUrl: finalUrl, finalRes: res} = await followUrl(this.url);
+                let {finalUrl: finalUrl, finalRes: res} = await followUrl(this.url, {redirect: 'manual', timeout: 5000, headers: this.getHeadersForURL()});
                 this.finalUrl = finalUrl;
                 this.finalUrlParsed = parseURL(this.finalUrl);
                 this.needScraper = this.needScraper || this.config.domainsUseScraper.some((s) =>
@@ -91,11 +82,11 @@ class LinkContent{
                     this.finalUrlParsed.host.endsWith('.'+s)
                 );
                 
-                if('statusCode' in res){
-                    if(res.statusCode >= 200 && res.statusCode < 300){
+                if('status' in res){
+                    if(res.status >= 200 && res.status < 300){
                         this.statusOk = true;
                         this.response = res;
-                        this.contentType = res.headers['content-type'];
+                        this.contentType = res.headers.get('content-type');
                     }
                 } 
             }
@@ -138,19 +129,8 @@ class LinkContent{
                 }
                 else if(this.statusOk && this.contentType.startsWith('text/html')){
                     try{
-                        const htmlPromise = new Promise((resolve, reject) => {
-                            let html = '';
-                            this.response.on('data', (chunk) => {
-                              html += chunk;
-                            });
-                            this.response.on('end', () => {
-                              resolve(html);
-                            });
-                            this.response.on('error', (err) => {
-                              reject(err);
-                            });
-                          });
-                          this.html = await htmlPromise;
+                        let buf = Buffer.from(await this.response.arrayBuffer());
+                        this.html = whatwgEncoding.decode(buf, htmlEncodingSniffer(buf, {defaultEncoding: 'UTF-8'}));
                     }
                     catch(e){
                         console.log("getHTML failed: " + this.url);
@@ -169,7 +149,7 @@ class LinkContent{
     async getMetaData(){
         if (!this.metadata)
         {
-            this.metadata = await metascraper({html: await this.getHTML(), url: this.url});
+            this.metadata = await metascraper({html: await this.getHTML(), url: this.finalUrl ? this.finalUrl : this.url});
         }
         return this.metadata;
     }
@@ -182,31 +162,12 @@ class LinkContent{
             if(this.html == null){
                 await this.getHTML();
             }
-            if(this.title == null){
-                // ld+json
-                let $ = cheerio.load(this.html);
-                if($('script[type="application/ld+json"]').length){
-                    for(let el of $('script[type="application/ld+json"]') ){
-                        try{
-                            let ld = JSON.parse($(el).html());
-                            if('@type' in ld){
-                                if(ld['@type'] == "NewsArticle" && 'headline' in ld)
-                                {
-                                    this.title = ld['headline'];
-                                }
-                            }    
-                        }
-                        catch(error){
-                        }
-                    }
-                }
-            }
             if(this.title == null)
             {
                 // metascraper
                 if (!this.metadata)
                 {
-                    this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
+                    await this.getMetaData();
                 }
                 this.title = this.metadata.title;
             }
@@ -236,30 +197,10 @@ class LinkContent{
             }
             if(this.description == null)
             {
-                // ld+json
-                let $ = cheerio.load(this.html);
-                if($('script[type="application/ld+json"]').length){
-                    for(let el of $('script[type="application/ld+json"]') ){
-                        try{
-                            let ld = JSON.parse($(el).html());
-                            if('@type' in ld){
-                                if(ld['@type'] == "NewsArticle" && 'description' in ld)
-                                {
-                                    this.description = ld['description'];
-                                }
-                            }    
-                        }
-                        catch(error){
-                        }
-                    }
-                }
-            }
-            if(this.description == null)
-            {
                 // metascraper
                 if (!this.metadata)
                 {
-                    this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
+                    await this.getMetaData();
                 }
                 this.description = this.metadata.description;
             }
@@ -281,29 +222,12 @@ class LinkContent{
                 {
                     await this.getHTML();
                 }
-                // ld+json
-                let $ = cheerio.load(this.html);
-                if($('script[type="application/ld+json"]').length){
-                    for(let el of $('script[type="application/ld+json"]') ){
-                        try{
-                            let ld = JSON.parse($(el).html());
-                            if('@type' in ld){
-                                if(ld['@type'] == "NewsArticle" && 'image' in ld)
-                                {
-                                    this.image = ld['image'].url;
-                                }
-                            }    
-                        }
-                        catch(error){
-                        }
-                    }
-                }
             }
             if(this.image == null)
             {
                 if (!this.metadata)
                 {
-                    this.metadata = await metascraper({html: (await this.getHTML()), url: this.url});
+                    await this.getMetaData();
                 }
                 this.image = this.metadata.image;
             }
