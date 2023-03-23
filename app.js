@@ -1,16 +1,16 @@
-var fs = require('fs');
-var parseURL = require("whatwg-url").parseURL;
+const fs = require('fs');
+const parseURL = require("whatwg-url").parseURL;
 
-var toml = require('@iarna/toml');
-var cheerio = require("cheerio");
-var RSSParser = require('rss-parser');
+const toml = require('@iarna/toml');
+const cheerio = require("cheerio");
+const RSSParser = require('rss-parser');
 let rssParser = new RSSParser();
-var RSS = require('rss');
-var sw = require('stopword');
-var validUrl = require('valid-url');
+const RSS = require('rss');
+const { removeStopwords, eng, fra } = require('stopword')
+const validUrl = require('valid-url');
 
-var config = require('./config.json')
-var LinkContent = require('./LinkContent.js')
+const config = require('./config.json')
+const LinkContent = require('./LinkContent.js')
 
 const customStopWords = fs.existsSync('./stopwords.txt') ? fs.readFileSync('./stopwords.txt', 'utf-8').split('\n').filter(Boolean) : [];
 const customStopRegex = fs.existsSync('./stopregex.txt') ? fs.readFileSync('./stopregex.txt', 'utf-8').split('\n').filter(Boolean).map((s)=>{return new RegExp(s);}) : [];
@@ -20,7 +20,7 @@ function titleIsStopWord(title){
     result = customStopRegex.some((s)=>{return s.exec(title_)});
     if(!result)
     {
-        if(sw.removeStopwords(title_.split(' ').filter(Boolean), [...sw.en, ...sw.fr, ...customStopWords]).length == 0)
+        if(removeStopwords(title_.split(' ').filter(Boolean), [...eng, ...fra, ...customStopWords]).length == 0)
         {
             result = true;
         }

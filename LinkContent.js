@@ -11,7 +11,7 @@ var metascraper = require('metascraper')([
     require('metascraper-title')()
 ])
 
-var cheerio = require('cheerio')
+// var cheerio = require('cheerio')
 
 var pjson  = require('./package.json');
 const userAgent   = pjson.name + "/" + pjson.version;
@@ -74,7 +74,7 @@ class LinkContent{
     async checkUrl(){
         try{
             if(!this.needScraper){
-                let {finalUrl: finalUrl, finalRes: res} = await followUrl(this.url, {redirect: 'manual', timeout: 5000, headers: this.getHeadersForURL()});
+                let {finalUrl: finalUrl, finalRes: res} = await followUrl(this.url, {redirect: 'manual', timeout: config.timeout ? config.timeout : 5000, headers: this.getHeadersForURL()});
                 this.finalUrl = finalUrl;
                 this.finalUrlParsed = parseURL(this.finalUrl);
                 this.needScraper = this.needScraper || this.config.domainsUseScraper.some((s) =>
