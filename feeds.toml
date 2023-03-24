@@ -57,3 +57,4 @@ entry.includes.target = "title"
 entry.includes.keyword = "links"
 link.selector = "a.embedded-post"
 link.excludes = ["arnoldkling"]
+recent = 2
