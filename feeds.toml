@@ -8,14 +8,15 @@ entry.includes.target = "title"
 entry.includes.keyword = "assorted link"
 link.selector = "a"
 link.excludes = ["marginalrevolution.com"]
+recent = 3
 
 [[feeds]]
 url = "https://braddelong.substack.com/feed"
 entry.includes.target = ["title", "content"]
 entry.includes.keyword = "briefly noted"
 link.selector = "a"
-link.excludes = ["braddelong.substack.com","twitter.com", "cdn.substack.com", "//substack.com", "substackcdn.com"]
-recent = 3
+link.excludes = ["braddelong", "twitter.com", "cdn.substack.com", "//substack.com", "substackcdn.com"]
+recent = 1
 useLinkText = false
 
 [[feeds]]
@@ -24,14 +25,14 @@ entry.includes.target = "title"
 entry.includes.keyword = "revue de presse"
 link.selector = "a"
 link.excludes = ["tocqueville21.com", "twitter.com", "creativecommons.org/licenses", "Wikimedia Commons", "Creative Commons"]
-recent = 5
+recent = 3
 useLinkText = false
 
 [[feeds]]
 url = "https://bestoftwitter.substack.com/feed"
 link.selector = "a"
 link.excludes = ["bestoftwitter.substack.com", "cdn.substack.com", "substackcdn.com"]
-recent = 3
+recent = 2
 
 [[feeds]]
 url = "https://chrisblattman.com/feed/"
@@ -39,4 +40,20 @@ entry.includes.target = "title"
 entry.includes.keyword = "links i liked"
 link.selector = "a"
 link.excludes = ["chrisblattman.com"]
-recent=3
+recent = 2
+
+[[feeds]]
+url = "https://arnoldkling.substack.com/feed"
+entry.includes.target = "title"
+entry.includes.keyword = "links"
+link.selector = "a:not(blockquote a):not(.embedded-post)"
+link.excludes = ["substack.com"]
+useLinkText = false
+recent = 2
+
+[[feeds]]
+url = "https://arnoldkling.substack.com/feed"
+entry.includes.target = "title"
+entry.includes.keyword = "links"
+link.selector = "a.embedded-post"
+link.excludes = ["arnoldkling"]

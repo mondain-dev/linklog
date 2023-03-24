@@ -67,6 +67,9 @@ let extractLinkText = (strHTML) => {
 }
 
 let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true) => {
+    if(!excludes){
+        excludes = [];
+    }
     let entryContent = '';
     if('content:encoded' in entry){
         entryContent = entry['content:encoded'];
