@@ -15,7 +15,7 @@ url = "https://braddelong.substack.com/feed"
 entry.includes.target = ["title", "content"]
 entry.includes.keyword = "briefly noted"
 link.selector = "a"
-link.excludes = ["braddelong", "twitter.com", "cdn.substack.com", "//substack.com", "substackcdn.com"]
+link.excludes = ["braddelong", "twitter.com", "cdn.substack.com", "//substack.com", "substackcdn.com", "readwise.io"]
 recent = 1
 useLinkText = false
 
