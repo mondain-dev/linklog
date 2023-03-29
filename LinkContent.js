@@ -162,6 +162,25 @@ class LinkContent{
             if(this.html == null){
                 await this.getHTML();
             }
+            if(this.title == null){
+                // ld+json
+                let $ = cheerio.load(this.html);
+                if($('script[type="application/ld+json"]').length){
+                    for(let el of $('script[type="application/ld+json"]') ){
+                        try{
+                            let ld = JSON.parse($(el).html());
+                            if('@type' in ld){
+                                if(ld['@type'] == "NewsArticle" && 'headline' in ld)
+                                {
+                                    this.title = ld['headline'];
+                                }
+                            }    
+                        }
+                        catch(error){
+                        }
+                    }
+                }
+            }
             if(this.title == null)
             {
                 // metascraper
@@ -197,6 +216,26 @@ class LinkContent{
             }
             if(this.description == null)
             {
+                // ld+json
+                let $ = cheerio.load(this.html);
+                if($('script[type="application/ld+json"]').length){
+                    for(let el of $('script[type="application/ld+json"]') ){
+                        try{
+                            let ld = JSON.parse($(el).html());
+                            if('@type' in ld){
+                                if(ld['@type'] == "NewsArticle" && 'description' in ld)
+                                {
+                                    this.description = ld['description'];
+                                }
+                            }    
+                        }
+                        catch(error){
+                        }
+                    }
+                }
+            }
+            if(this.description == null)
+            {
                 // metascraper
                 if (!this.metadata)
                 {
@@ -216,13 +255,31 @@ class LinkContent{
             await this.checkUrl();
         }
         if((this.statusOk && this.contentType.startsWith('text/html')) || this.needScraper ){                
+            if(this.html == null)
+            {
+                await this.getHTML();
+            }
             if(this.image == null)
             {
-                if(this.html == null)
-                {
-                    await this.getHTML();
+                // ld+json
+                let $ = cheerio.load(this.html);
+                if($('script[type="application/ld+json"]').length){
+                    for(let el of $('script[type="application/ld+json"]') ){
+                        try{
+                            let ld = JSON.parse($(el).html());
+                            if('@type' in ld){
+                                if(ld['@type'] == "NewsArticle" && 'image' in ld)
+                                {
+                                    this.image = ld['image'].url;
+                                }
+                            }    
+                        }
+                        catch(error){
+                        }
+                    }
                 }
             }
+            
             if(this.image == null)
             {
                 if (!this.metadata)
