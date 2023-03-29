@@ -85,7 +85,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
         for (let el of $(cssSelector)){
             if (excludes.every((t)=>{return !$(el).attr('href').includes(t) && !$(el).text().includes(t) })){
                 let linkURL = $(el).attr('href');
-                if (validUrl.isUri(linkURL))
+                if (validUrl.isUri(linkURL) && linkURL.startsWith('http'))
                 {
                     let linkContent;
                     // linkTitle
@@ -170,7 +170,7 @@ let loadFeeds = async (feedConfig) => {
                     useLinkText = f.useLinkText;
                 }
                 if(includeEntry){
-                    let extractedLinks = await extractLinks(entry, f.link.excludes, f.link.selector, useLinkText);
+                    let extractedLinks = await extractLinks(entry, [...f.link.excludes, config.domainsBlackList], f.link.selector, useLinkText);
                     entries.push(...extractedLinks);
                 }
             }

@@ -13,5 +13,8 @@
         "quantamagazine.org",
         "arxiv.org",
         "tabletmag.com"
+    ],
+    "domainsBlackList": [
+        "readwise.io"
     ]
 }
