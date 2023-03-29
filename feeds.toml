@@ -14,9 +14,10 @@ recent = 3
 url = "https://braddelong.substack.com/feed"
 entry.includes.target = ["title", "content"]
 entry.includes.keyword = "briefly noted"
+section.includes = "briefly noted"
 link.selector = "a"
 link.excludes = ["braddelong", "twitter.com", "cdn.substack.com", "//substack.com", "substackcdn.com"]
-recent = 4
+recent = 3
 useLinkText = false
 
 [[feeds]]

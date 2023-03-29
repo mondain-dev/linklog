@@ -11,6 +11,7 @@ const validUrl = require('valid-url');
 
 const config = require('./config.json')
 const LinkContent = require('./LinkContent.js')
+const extractSection = require('./extract_section.js')
 
 const customStopWords = fs.existsSync('./stopwords.txt') ? fs.readFileSync('./stopwords.txt', 'utf-8').split('\n').filter(Boolean) : [];
 const customStopRegex = fs.existsSync('./stopregex.txt') ? fs.readFileSync('./stopregex.txt', 'utf-8').split('\n').filter(Boolean).map((s)=>{return new RegExp(s);}) : [];
@@ -66,7 +67,7 @@ let extractLinkText = (strHTML) => {
     }
 }
 
-let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true) => {
+let extractLinks = async (entry, excludes, cssSelector = 'a', sectionIncludes = null, useLinkText = true) => {
     if(!excludes){
         excludes = [];
     }
@@ -81,7 +82,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', useLinkText = true
     }
     let links = [];
     if(entryContent){
-        const $ = cheerio.load(entryContent);
+        const $ = cheerio.load(sectionIncludes ? extractSection(entryContent, sectionIncludes) :entryContent);
         for (let el of $(cssSelector)){
             if (excludes.every((t)=>{return !$(el).attr('href').includes(t) && !$(el).text().includes(t) })){
                 let linkURL = $(el).attr('href');
@@ -170,7 +171,7 @@ let loadFeeds = async (feedConfig) => {
                     useLinkText = f.useLinkText;
                 }
                 if(includeEntry){
-                    let extractedLinks = await extractLinks(entry, [...f.link.excludes, config.domainsBlackList], f.link.selector, useLinkText);
+                    let extractedLinks = await extractLinks(entry, [...f.link.excludes, config.domainsBlackList], f.link.selector, f.section ? f.section.includes : null, useLinkText);
                     entries.push(...extractedLinks);
                 }
             }
