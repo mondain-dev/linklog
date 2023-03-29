@@ -16,7 +16,7 @@ entry.includes.target = ["title", "content"]
 entry.includes.keyword = "briefly noted"
 link.selector = "a"
 link.excludes = ["braddelong", "twitter.com", "cdn.substack.com", "//substack.com", "substackcdn.com"]
-recent = 1
+recent = 4
 useLinkText = false
 
 [[feeds]]
