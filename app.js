@@ -11,7 +11,7 @@ const validUrl = require('valid-url');
 
 const config = require('./config.json')
 const LinkContent = require('./LinkContent.js')
-const extractSection = require('./extract_section.js')
+const extractSection = require('./extractSection.js')
 
 const customStopWords = fs.existsSync('./stopwords.txt') ? fs.readFileSync('./stopwords.txt', 'utf-8').split('\n').filter(Boolean) : [];
 const customStopRegex = fs.existsSync('./stopregex.txt') ? fs.readFileSync('./stopregex.txt', 'utf-8').split('\n').filter(Boolean).map((s)=>{return new RegExp(s);}) : [];
