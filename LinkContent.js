@@ -3,6 +3,8 @@ var parseURL = require("whatwg-url").parseURL;
 
 var fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
+const cheerio = require("cheerio");
+
 var htmlEncodingSniffer = require("html-encoding-sniffer");
 var whatwgEncoding = require("whatwg-encoding");
 var metascraper = require('metascraper')([
