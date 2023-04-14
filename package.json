@@ -16,7 +16,7 @@
     "metascraper-description": "^5.33.7",
     "metascraper-image": "^5.33.7",
     "metascraper-title": "^5.33.7",
-    "node-fetch": "^3.1.0",
+    "node-fetch": "^2.6.9",
     "rss": "^1.2.2",
     "rss-parser": "^3.12.0",
     "stopword": "^2.0.7",

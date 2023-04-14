@@ -1,7 +1,7 @@
 var URL = require('whatwg-url').URL
 var parseURL = require("whatwg-url").parseURL;
 
-var fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = require('node-fetch');
 
 const cheerio = require("cheerio");
 
@@ -76,7 +76,7 @@ class LinkContent{
     async checkUrl(){
         try{
             if(!this.needScraper){
-                let {finalUrl: finalUrl, finalRes: res} = await followUrl(this.url, {redirect: 'manual', timeout: this.config.timeout ? this.config.timeout : 5000, headers: this.getHeadersForURL()});
+                let {finalUrl: finalUrl, finalRes: res} = await followUrl(this.url, {redirect: 'manual', timeout: this.config.timeout ? this.config.timeout : 6000, headers: this.getHeadersForURL(), follow: 5});
                 this.finalUrl = finalUrl;
                 this.finalUrlParsed = parseURL(this.finalUrl);
                 this.needScraper = this.needScraper || this.config.domainsUseScraper.some((s) =>

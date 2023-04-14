@@ -16,5 +16,6 @@
     ],
     "domainsBlackList": [
         "readwise.io"
-    ]
+    ],
+    "timeout": 6000
 }
