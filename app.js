@@ -80,9 +80,15 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', sectionIncludes = 
     }else if('description' in entry){
         entryContent = entry['description'];
     }
+    if(sectionIncludes){
+        let extractedSection = extractSection(entryContent, sectionIncludes);
+        if(extractedSection){
+            entryContent = extractedSection;
+        }
+    }
     let links = [];
     if(entryContent){
-        const $ = cheerio.load(sectionIncludes ? extractSection(entryContent, sectionIncludes) :entryContent);
+        const $ = cheerio.load(entryContent);
         for (let el of $(cssSelector)){
             if (excludes.every((t)=>{return !$(el).attr('href').includes(t) && !$(el).text().includes(t) })){
                 let linkURL = $(el).attr('href');
