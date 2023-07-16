@@ -44,7 +44,7 @@ class LinkContent{
         this.url = url;
         this.urlParsed = parseURL(url);
         this.needScraper = this.config.domainsUseScraper.some((s)=>
-            this.urlParsed.host == s || 
+            this.urlParsed.host === s || 
             this.urlParsed.host.endsWith('.'+s)
         );
 
@@ -64,7 +64,7 @@ class LinkContent{
     }
 
     getHeadersForURL(){
-        if(this.config.domainsCustomUserAgent.some((s)=>{return this.urlParsed.host == s || this.urlParsed.host.endsWith('.'+s)}))
+        if(this.config.domainsCustomUserAgent.some((s)=>{return this.urlParsed.host === s || this.urlParsed.host.endsWith('.'+s)}))
         {
             return {'User-Agent': userAgent, 'From': userEmail};
         }
@@ -80,7 +80,7 @@ class LinkContent{
                 this.finalUrl = finalUrl;
                 this.finalUrlParsed = parseURL(this.finalUrl);
                 this.needScraper = this.needScraper || this.config.domainsUseScraper.some((s) =>
-                    this.finalUrlParsed.host == s || 
+                    this.finalUrlParsed.host === s || 
                     this.finalUrlParsed.host.endsWith('.'+s)
                 );
                 
@@ -116,7 +116,7 @@ class LinkContent{
     }
 
     async getHTML(){
-        if(this.html == null)
+        if(this.html === null)
         {
             if(this.needScraper){
                 this.html = await this.getHTMLScraper();
@@ -161,10 +161,10 @@ class LinkContent{
             await this.checkUrl();
         }
         if((this.statusOk && this.contentType.startsWith('text/html')) || this.needScraper ){
-            if(this.html == null){
+            if(this.html === null){
                 await this.getHTML();
             }
-            if(this.title == null){
+            if(this.title === null){
                 // ld+json
                 let $ = cheerio.load(this.html);
                 if($('script[type="application/ld+json"]').length){
@@ -172,7 +172,7 @@ class LinkContent{
                         try{
                             let ld = JSON.parse($(el).html());
                             if('@type' in ld){
-                                if(ld['@type'] == "NewsArticle" && 'headline' in ld)
+                                if(ld['@type'] === "NewsArticle" && 'headline' in ld)
                                 {
                                     this.title = ld['headline'];
                                 }
@@ -183,7 +183,20 @@ class LinkContent{
                     }
                 }
             }
-            if(this.title == null)
+            if(this.title === null){
+                let $ = cheerio.load(this.html);
+                if($('script[id="initial-props"]').length){
+                    for(let el of $('script[id="initial-props"]') ){
+                        try{
+                            let data = JSON.parse($(el).html());
+                            this.title = data.trackingData?.extraContext?.pageDescription?.headline || null
+                        }
+                        catch(error){
+                        }
+                    }
+                }
+            }
+            if(this.title === null)
             {
                 // metascraper
                 if (!this.metadata)
@@ -193,14 +206,14 @@ class LinkContent{
                 this.title = this.metadata.title;
             }
         }
-        if(this.title == null)
+        if(this.title === null)
         {
             if(this.statusOk && this.contentType.startsWith('image'))
             {
                 this.title = "[image]"
             }
         }
-        if(this.title == null)
+        if(this.title === null)
         {
             this.title = "";
         }
@@ -212,11 +225,11 @@ class LinkContent{
             await this.checkUrl();
         }
         if((this.statusOk && this.contentType.startsWith('text/html')) || this.needScraper ){
-            if(this.html == null)
+            if(this.html === null)
             {
                 await this.getHTML();
             }
-            if(this.description == null)
+            if(this.description === null)
             {
                 // ld+json
                 let $ = cheerio.load(this.html);
@@ -225,7 +238,7 @@ class LinkContent{
                         try{
                             let ld = JSON.parse($(el).html());
                             if('@type' in ld){
-                                if(ld['@type'] == "NewsArticle" && 'description' in ld)
+                                if(ld['@type'] === "NewsArticle" && 'description' in ld)
                                 {
                                     this.description = ld['description'];
                                 }
@@ -236,7 +249,21 @@ class LinkContent{
                     }
                 }
             }
-            if(this.description == null)
+            if(this.description === null){
+                let $ = cheerio.load(this.html);
+                if($('script[id="initial-props"]').length){
+                    for(let el of $('script[id="initial-props"]') ){
+                        try{
+                            let data = JSON.parse($(el).html());
+                            this.title = data.trackingData?.extraContext?.pageDescription?.description || null
+                        }
+                        catch(error){
+                        }
+                    }
+                }
+            }
+
+            if(this.description === null)
             {
                 // metascraper
                 if (!this.metadata)
@@ -246,7 +273,7 @@ class LinkContent{
                 this.description = this.metadata.description;
             }
         }
-        if(this.description == null){
+        if(this.description === null){
             this.description = "";
         }
         return this.description;
@@ -257,11 +284,11 @@ class LinkContent{
             await this.checkUrl();
         }
         if((this.statusOk && this.contentType.startsWith('text/html')) || this.needScraper ){                
-            if(this.html == null)
+            if(this.html === null)
             {
                 await this.getHTML();
             }
-            if(this.image == null)
+            if(this.image === null)
             {
                 // ld+json
                 let $ = cheerio.load(this.html);
@@ -270,7 +297,7 @@ class LinkContent{
                         try{
                             let ld = JSON.parse($(el).html());
                             if('@type' in ld){
-                                if(ld['@type'] == "NewsArticle" && 'image' in ld)
+                                if(ld['@type'] === "NewsArticle" && 'image' in ld)
                                 {
                                     this.image = ld['image'].url;
                                 }
@@ -282,7 +309,7 @@ class LinkContent{
                 }
             }
             
-            if(this.image == null)
+            if(this.image === null)
             {
                 if (!this.metadata)
                 {
@@ -294,9 +321,9 @@ class LinkContent{
         else if (this.statusOk && this.contentType.startsWith('image')){
             this.image = this.finalUrl;
         }
-        if(this.image == null)
+        if(this.image === null)
         {
-            this.image == "";
+            this.image === "";
         }
         return this.image;
     }
