@@ -183,19 +183,6 @@ class LinkContent{
                     }
                 }
             }
-            if(this.title === null){
-                let $ = cheerio.load(this.html);
-                if($('script[id="initial-props"]').length){
-                    for(let el of $('script[id="initial-props"]') ){
-                        try{
-                            let data = JSON.parse($(el).html());
-                            this.title = data.trackingData?.extraContext?.pageDescription?.headline || null
-                        }
-                        catch(error){
-                        }
-                    }
-                }
-            }
             if(this.title === null)
             {
                 // metascraper
@@ -249,20 +236,6 @@ class LinkContent{
                     }
                 }
             }
-            if(this.description === null){
-                let $ = cheerio.load(this.html);
-                if($('script[id="initial-props"]').length){
-                    for(let el of $('script[id="initial-props"]') ){
-                        try{
-                            let data = JSON.parse($(el).html());
-                            this.title = data.trackingData?.extraContext?.pageDescription?.description || null
-                        }
-                        catch(error){
-                        }
-                    }
-                }
-            }
-
             if(this.description === null)
             {
                 // metascraper
