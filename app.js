@@ -10,7 +10,7 @@ const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') +
                     (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
 const RSSParser = require('rss-parser');
 let rssParser = new RSSParser({
-    headers: {'User-Agent': userAgent, 'From': userEmail},
+    headers: {'User-Agent': 'facebookexternalhit'},
 });
 
 const RSS = require('rss');
