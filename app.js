@@ -3,16 +3,8 @@ const parseURL = require("whatwg-url").parseURL;
 
 const toml = require('@iarna/toml');
 const cheerio = require("cheerio");
-
-var pjson  = require('./package.json');
-const userAgent   = pjson.name + "/" + pjson.version;
-const userEmail   = (process.env.GITHUB_ACTOR || 'github-pages-deploy-action') + '@users.noreply.' + 
-                    (process.env.GITHUB_SERVER_URL ? parseURL(process.env.GITHUB_SERVER_URL).host : 'github.com')
 const RSSParser = require('rss-parser');
-let rssParser = new RSSParser({
-    headers: {'User-Agent': userAgent, 'From': userEmail},
-});
-
+let rssParser = new RSSParser();
 const RSS = require('rss');
 const { removeStopwords, eng, fra } = require('stopword')
 const validUrl = require('valid-url');
