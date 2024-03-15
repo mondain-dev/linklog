@@ -154,6 +154,7 @@ let loadFeeds = async (feedConfig) => {
     let entries = [];
     for(const f of feedConfig)
     {
+        console.log(f.url)
         await rssParser.parseURL(f.useScraper ? getScraperUrl(f.url) : f.url ).then( async (feedContent) => {
             for (let entry of feedContent.items)
             {
