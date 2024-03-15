@@ -19,6 +19,7 @@ link.selector = "a"
 link.excludes = ["braddelong", "twitter.com", "cdn.substack.com", "//substack.com", "substackcdn.com"]
 recent = 3
 useLinkText = false
+useScraper  = true
 
 [[feeds]]
 url = "https://tocqueville21.com/feed/"
@@ -34,6 +35,7 @@ url = "https://bestoftwitter.substack.com/feed"
 link.selector = "a"
 link.excludes = ["bestoftwitter.substack.com", "cdn.substack.com", "substackcdn.com"]
 recent = 2
+useScraper  = true
 
 [[feeds]]
 url = "https://chrisblattman.com/feed/"
@@ -51,6 +53,7 @@ link.selector = "a:not(blockquote a):not(.embedded-post)"
 link.excludes = ["substack.com"]
 useLinkText = false
 recent = 2
+useScraper  = true
 
 [[feeds]]
 url = "https://arnoldkling.substack.com/feed"
@@ -59,3 +62,4 @@ entry.includes.keyword = "links"
 link.selector = "a.embedded-post"
 link.excludes = ["arnoldkling"]
 recent = 2
+useScraper  = true
