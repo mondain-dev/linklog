@@ -143,7 +143,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', sectionIncludes = 
     return links;
 }
 
-let getScraperUrl = async(url) => {
+let getScraperUrl = (url) => {
     let endpoint = new URL(config.endpointScraper); 
     endpoint.searchParams.append("api_key", process.env.SCRAPER_API_KEY);
     endpoint.searchParams.append("url", url);
@@ -154,8 +154,6 @@ let loadFeeds = async (feedConfig) => {
     let entries = [];
     for(const f of feedConfig)
     {
-        feedUrl = f.useScraper ? getScraperUrl(f.url) : f.url
-        console.log(feedUrl)
         await rssParser.parseURL(f.useScraper ? getScraperUrl(f.url) : f.url ).then( async (feedContent) => {
             for (let entry of feedContent.items)
             {
