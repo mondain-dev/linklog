@@ -4,7 +4,8 @@
         "bloomberg.com", 
         "ncbi.nlm.nih.gov", 
         "jstor.org", 
-        "washingtonpost.com"
+        "washingtonpost.com",
+        "npr.org"
     ],
     "domainsUseScraper": [
         "bloomberg.com",
