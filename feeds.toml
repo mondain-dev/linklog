@@ -16,7 +16,7 @@ entry.includes.target = ["title", "content"]
 entry.includes.keyword = "briefly noted"
 section.includes = ["briefly noted", "must-read"]
 link.selector = "a"
-link.excludes = ["braddelong", "twitter.com", "cdn.substack.com", "//substack.com", "substackcdn.com"]
+link.excludes = ["braddelong", "twitter.com", "//x.com", ".x.com", "cdn.substack.com", "//substack.com", "substackcdn.com"]
 recent = 3
 useLinkText = false
 useScraper  = true
@@ -26,7 +26,7 @@ url = "https://tocqueville21.com/feed/"
 entry.includes.target = "title"
 entry.includes.keyword = "revue de presse"
 link.selector = "a"
-link.excludes = ["tocqueville21.com", "twitter.com", "creativecommons.org/licenses", "Wikimedia Commons", "Creative Commons"]
+link.excludes = ["tocqueville21.com", "twitter.com", "//x.com", ".x.com", "creativecommons.org/licenses", "Wikimedia Commons", "Creative Commons"]
 recent = 3
 useLinkText = false
 

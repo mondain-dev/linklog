@@ -114,7 +114,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', sectionIncludes = 
                     if($('.embedded-post-body', el).length){
                         linkDescription = '<p>' + $('.embedded-post-body', el).first().text() + '</p>';
                     }
-                    else if (/twitter.com$/.test(parseURL(linkURL).host.toLocaleLowerCase())){
+                    else if (/((^|\.)x\.com|twitter\.com)$/.test(parseURL(linkURL).host.toLocaleLowerCase())){
                         if(!linkContent){
                             linkContent = new LinkContent(linkURL, config);
                         }
