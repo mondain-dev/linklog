@@ -63,3 +63,9 @@ link.selector = "a.embedded-post"
 link.excludes = ["arnoldkling"]
 recent = 2
 useScraper  = true
+
+[[feeds]]
+url = "https://longreads.com/rss"
+entry.includes.target = ["title"]
+entry.includes.keyword = "top 5 longreads"
+link.selector = "h2 a"
