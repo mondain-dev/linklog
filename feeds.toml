@@ -68,5 +68,5 @@ useScraper  = true
 url = "https://longreads.com/rss"
 entry.includes.target = ["title"]
 entry.includes.keyword = "top 5 longreads"
-link.selector = "h2 a"
+link.selector = "h2 a, h3 a"
 recent = 2
