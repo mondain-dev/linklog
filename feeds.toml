@@ -69,3 +69,4 @@ url = "https://longreads.com/rss"
 entry.includes.target = ["title"]
 entry.includes.keyword = "top 5 longreads"
 link.selector = "h2 a"
+recent = 2

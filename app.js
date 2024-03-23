@@ -185,7 +185,7 @@ let loadFeeds = async (feedConfig) => {
                     useLinkText = f.useLinkText;
                 }
                 if(includeEntry){
-                    let extractedLinks = await extractLinks(entry, [...f.link.excludes, config.domainsBlackList], f.link.selector, f.section ? f.section.includes : null, useLinkText);
+                    let extractedLinks = await extractLinks(entry, [...(f.link.excludes ?? []), ...(config.domainsBlackList ?? [])], f.link.selector, f.section ? f.section.includes : null, useLinkText);
                     entries.push(...extractedLinks);
                 }
             }
