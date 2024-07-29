@@ -103,7 +103,7 @@ class LinkContent{
 
     async getHTMLScraper(){
         let endpoint = new URL(this.config.endpointScraper); 
-        endpoint.searchParams.append("api_key", process.env.SCRAPER_API_KEY);
+        endpoint.searchParams.append("x-api-key", process.env.SCRAPER_API_KEY);
         endpoint.searchParams.append("url", this.url);
         let html = ''
         try{

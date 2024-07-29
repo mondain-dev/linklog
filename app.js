@@ -145,7 +145,7 @@ let extractLinks = async (entry, excludes, cssSelector = 'a', sectionIncludes = 
 
 let getScraperUrl = (url) => {
     let endpoint = new URL(config.endpointScraper); 
-    endpoint.searchParams.append("api_key", process.env.SCRAPER_API_KEY);
+    endpoint.searchParams.append("x-api-key", process.env.SCRAPER_API_KEY);
     endpoint.searchParams.append("url", url);
     return endpoint.href
 }
