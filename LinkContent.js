@@ -105,6 +105,7 @@ class LinkContent{
         let endpoint = new URL(this.config.endpointScraper); 
         endpoint.searchParams.append("x-api-key", process.env.SCRAPER_API_KEY);
         endpoint.searchParams.append("url", this.url);
+        endpoint.searchParams.append("browser", "false");
         let html = ''
         try{
             let res = await fetch(endpoint.href);
