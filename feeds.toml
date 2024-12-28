@@ -3,7 +3,7 @@ url = "https://mondain-dev.github.io/linklog/index.xml"
 site = "https://github.com/mondain-dev/linklog"
 
 [[feeds]]
-url = "http://feeds.feedburner.com/marginalrevolution"
+url = "https://marginalrevolution.com/feed"
 entry.includes.target = "title"
 entry.includes.keyword = "assorted link"
 link.selector = "a"
